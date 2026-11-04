@@ -1,5 +1,5 @@
 /* SQLLab · Service Worker · cache-first para toda la app */
-const CACHE_NAME = 'sqllab-v1.0.0';
+const CACHE_NAME = 'sqllab-v1.0.1';
 const ASSETS = [
   './sqllab.html',
   './manifest.json',
@@ -43,7 +43,7 @@ self.addEventListener('fetch', event => {
       }).catch(() => {
         /* Sin red y sin cache: si es navegación, devolver el HTML */
         if(event.request.mode === 'navigate'){
-          return caches.match('./sqllab.html');
+          return caches.match('./index.html');
         }
       });
     })
