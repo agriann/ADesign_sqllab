@@ -1,0 +1,2817 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQLLab V4.0 - Laboratorio de SQL</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;background:#f4f6f5;font-size:14px}
+.app{display:grid;grid-template-columns:280px 1fr 340px;min-height:100vh}
+
+/* ── Sidebar (verde oscuro) ── */
+.sidebar{background:#1c5c39;color:#fff;padding:16px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;max-height:100vh;position:sticky;top:0}
+.brand{font-size:20px;font-weight:700;padding-bottom:10px;border-bottom:1px solid #107C41;letter-spacing:.5px}
+.brand span{color:#a6e3b8;font-size:12px;font-weight:500;display:block;margin-top:2px}
+.levels-nav{flex:1;overflow-y:auto}
+.level-group{margin-bottom:14px}
+.level-header{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#9fceb4;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.level-header.locked{color:#5d7a67}
+.challenges{list-style:none}
+.challenges li{padding:6px 10px;border-radius:6px;font-size:12.5px;cursor:pointer;margin-bottom:3px;display:flex;justify-content:space-between;align-items:center;line-height:1.3;transition:background .1s}
+.challenges li:hover:not(.locked){background:#107C41}
+.challenges li.active{background:#107C41;font-weight:600;box-shadow:inset 3px 0 0 #a6e3b8}
+.challenges li.completed .chk{color:#a6e3b8;font-weight:bold;margin-left:6px}
+.challenges li.locked{opacity:.35;cursor:not-allowed}
+.challenges li .idbadge{font-size:10px;opacity:.6;margin-right:6px;font-family:monospace}
+.instructor-bar{background:rgba(255,255,255,.1);padding:8px 10px;border-radius:6px}
+.instructor-bar label{display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;user-select:none}
+.footer-actions{display:flex;flex-direction:column;gap:6px}
+.footer-actions button{width:100%;font-size:12px;padding:7px 10px}
+
+/* ── Main (claro) ── */
+.main{padding:20px;min-width:0;overflow-y:auto;max-height:100vh}
+
+/* ── Status strip ── */
+.status-strip{display:flex;background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:10px 4px;margin-bottom:16px;flex-wrap:wrap}
+.stat{flex:1;min-width:90px;text-align:center;padding:4px 8px;border-right:1px solid #eee}
+.stat:last-child{border-right:none}
+.stat .label{display:block;font-size:9.5px;text-transform:uppercase;color:#666;letter-spacing:.5px;margin-bottom:2px;font-weight:600}
+.stat .value{font-size:16px;font-weight:700;color:#107C41}
+
+/* ── Challenge panel ── */
+.challenge-panel{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:20px}
+.challenge-panel h1{font-size:21px;color:#1c5c39;margin-bottom:4px}
+.challenge-meta{color:#6d89af;font-size:12px;margin-bottom:14px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.section-block{margin-bottom:14px}
+.section-block h3{font-size:12px;text-transform:uppercase;color:#424853;margin-bottom:5px;letter-spacing:.5px;font-weight:700}
+.section-block p{color:#333;line-height:1.55;font-size:13.5px}
+
+/* ── Editor ── */
+.editor-wrap label{display:block;font-size:12px;text-transform:uppercase;color:#424853;margin-bottom:6px;letter-spacing:.5px;font-weight:700}
+#editor{width:100%;min-height:140px;padding:12px;font-family:'Consolas','Menlo','Courier New',monospace;font-size:13px;border:1px solid #c0c8d0;border-radius:6px;resize:vertical;background:#fafbfc;line-height:1.5;color:#1c5c39}
+#editor:focus{outline:none;border-color:#107C41;box-shadow:0 0 0 2px rgba(16,124,65,.15)}
+.editor-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+
+/* ── Botones ── */
+button{padding:8px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+button:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:#107C41;color:#fff}.btn-primary:hover:not(:disabled){background:#1c5c39}
+.btn-secondary{background:#6d89af;color:#fff}.btn-secondary:hover:not(:disabled){background:#56749a}
+.btn-warn{background:#d4a017;color:#fff}.btn-warn:hover:not(:disabled){background:#b08612}
+.btn-danger{background:#b03030;color:#fff}.btn-danger:hover:not(:disabled){background:#8a2525}
+.btn-ghost{background:#eef4f4;color:#424853}.btn-ghost:hover:not(:disabled){background:#dde3e8}
+
+/* ── Feedback ── */
+.feedback{margin-top:10px;padding:10px 12px;border-radius:6px;font-size:13px;line-height:1.4;display:none}
+.feedback.show{display:block}
+.feedback.ok{background:#e8f5ec;color:#1c5c39;border-left:4px solid #107C41}
+.feedback.err{background:#fceaea;color:#b03030;border-left:4px solid #b03030}
+.feedback.info{background:#eef2f8;color:#3b5580;border-left:4px solid #6d89af}
+
+/* ── Result table ── */
+.result-wrap{margin-top:16px}
+.result-wrap h3{font-size:12px;text-transform:uppercase;color:#424853;margin-bottom:8px;letter-spacing:.5px;font-weight:700}
+.result-table{overflow-x:auto;border:1px solid #e8ecef;border-radius:6px;max-height:300px;overflow-y:auto}
+.result-table table{border-collapse:collapse;width:100%;font-size:13px}
+.result-table th{background:#e8f3ed;color:#1c5c39;text-align:left;padding:8px 10px;border-bottom:2px solid #107C41;font-weight:700;position:sticky;top:0}
+.result-table td{padding:6px 10px;border-bottom:1px solid #eee;font-family:'Consolas',monospace;font-size:12.5px;color:#333}
+.result-table tr:hover td{background:#f8fbf9}
+.result-table .null{color:#999;font-style:italic}
+
+/* ── Right panel ── */
+.right-panel{background:#fff;border-left:1px solid #e0e0e0;padding:16px;position:sticky;top:0;max-height:100vh;overflow-y:auto;font-size:13px}
+.right-panel h3{font-size:11px;text-transform:uppercase;color:#424853;margin:16px 0 8px;letter-spacing:.7px;font-weight:700}
+.right-panel h3:first-child{margin-top:0}
+.stat-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f0f0f0;font-size:12.5px}
+.stat-row b{color:#107C41}
+#rp-schema{background:#f4f6f5;padding:10px;border-radius:4px;font-size:10.5px;overflow-x:auto;max-height:220px;overflow-y:auto;font-family:'Consolas',monospace;line-height:1.5;white-space:pre;color:#333}
+.hints-list{display:flex;flex-direction:column;gap:6px}
+.hint-item{background:#fff8e1;border-left:3px solid #d4a017;padding:8px 10px;border-radius:4px;font-size:12px;line-height:1.45;color:#5a4a10}
+.hint-locked{background:#f4f6f5;border-left:3px solid #ccc;color:#999;font-style:italic}
+
+/* ── Exam banner ── */
+.exam-banner{background:#fff8e1;border:1px solid #d4a017;padding:10px 14px;border-radius:6px;margin-bottom:12px;font-size:13px;color:#7a5a00;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.exam-banner b{color:#5a4000}
+.exam-banner button{font-size:12px;padding:5px 10px}
+
+/* ── Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px}
+.modal-overlay.hidden{display:none}
+.modal{background:#fff;border-radius:10px;padding:24px;max-width:480px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.3);max-height:85vh;overflow-y:auto}
+.modal h3{color:#1c5c39;margin-bottom:12px;font-size:18px}
+.modal-body{color:#333;font-size:14px;line-height:1.55;margin-bottom:18px}
+.modal-body p{margin-bottom:8px}
+.modal-body ul{margin-left:20px;line-height:1.7}
+.modal-body table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.modal-body th{text-align:left;padding:5px;border-bottom:1px solid #ccc;background:#e8f3ed;color:#1c5c39}
+.modal-body td{padding:5px;border-bottom:1px solid #eee}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.modal-input{width:100%;padding:9px 12px;border:1px solid #c0c8d0;border-radius:6px;font-size:14px;margin-top:8px;font-family:inherit}
+.modal-input:focus{outline:none;border-color:#107C41;box-shadow:0 0 0 2px rgba(16,124,65,.15)}
+
+/* ── Welcome ── */
+.welcome{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:32px;text-align:center}
+.welcome h1{color:#1c5c39;margin-bottom:12px}
+.welcome p{color:#555;margin-bottom:8px;line-height:1.6}
+
+/* ── Utility ── */
+.hidden{display:none!important}
+
+@media (max-width:1100px){
+  .app{grid-template-columns:1fr}
+  .sidebar,.right-panel{position:static;max-height:none}
+  .right-panel{border-left:none;border-top:1px solid #e0e0e0}
+  .main{max-height:none}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">SQLLab V4.0<span>Práctica real de SQL</span></div>
+    <div class="levels-nav" id="levelsNav"></div>
+    <div class="instructor-bar">
+      <label><input type="checkbox" id="instructorMode"> Modo instructor</label>
+    </div>
+    <div class="footer-actions">
+      <button class="btn-secondary" id="btnExam">🎯 Examen</button>
+      <button class="btn-ghost" id="btnReport">📄 Reporte HTML</button>
+      <button class="btn-ghost" id="btnClearLog">🧹 Borrar bitácora</button>
+      <button class="btn-danger" id="btnResetAll">⚠️ Reiniciar TODO</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="status-strip">
+      <div class="stat"><span class="label">Tiempo</span><span class="value" id="stat-time">00:00</span></div>
+      <div class="stat"><span class="label">Intentos</span><span class="value" id="stat-attempts">0</span></div>
+      <div class="stat"><span class="label">Pistas</span><span class="value" id="stat-hints">0</span></div>
+      <div class="stat"><span class="label">Puntos</span><span class="value" id="stat-points">0</span></div>
+      <div class="stat"><span class="label">Estado</span><span class="value" id="stat-state">—</span></div>
+      <div class="stat"><span class="label">Progreso</span><span class="value" id="stat-progress">0/30</span></div>
+    </header>
+    <div id="challengeArea"></div>
+  </main>
+
+  <aside class="right-panel" id="rightPanel">
+    <h3>Detalles del reto</h3>
+    <div class="stat-row"><span>Puntos base</span><b>100</b></div>
+    <div class="stat-row"><span>Intentos</span><b id="rp-attempts">—</b></div>
+    <div class="stat-row"><span>Fallos</span><b id="rp-failures">—</b></div>
+    <div class="stat-row"><span>Pistas usadas</span><b id="rp-hints">—</b></div>
+    <div class="stat-row"><span>Mejor puntuación</span><b id="rp-best">—</b></div>
+    <div class="stat-row"><span>Primer intento</span><b id="rp-first">—</b></div>
+    <h3>Schema cargado</h3>
+    <pre id="rp-schema">Selecciona un reto</pre>
+    <h3>Pistas reveladas</h3>
+    <div id="rp-hints-list" class="hints-list"><div class="hint-locked hint-item">Sin pistas usadas</div></div>
+  </aside>
+</div>
+
+<div class="modal-overlay hidden" id="modal-overlay">
+  <div class="modal">
+    <h3 id="modal-title"></h3>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="modal-cancel">Cancelar</button>
+      <button class="btn-primary" id="modal-confirm">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ═══════════════════════════════════════════════════════════
+   BLOQUE 2 · HELPERS + STATE + SCORING + MODALES
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Helpers básicos ── */
+const $ = id => document.getElementById(id);
+const escapeHtml = str => String(str).replace(/[&<>"']/g,
+  ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const fmtTime = s => String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+
+/* ── CHALLENGES · puente con los arrays ── */
+const CHALLENGES = { basico: [], intermedio: [], avanzado: [] };
+function initChallenges(){
+  if(typeof BASIC !== 'undefined') CHALLENGES.basico     = BASIC;
+  if(typeof INTER !== 'undefined') CHALLENGES.intermedio = INTER;
+  if(typeof ADV   !== 'undefined') CHALLENGES.avanzado   = ADV;
+}
+
+/* ── Niveles ── */
+const LEVELS = {
+  1: { name: 'Básico',     key: 'basico',     requires: null },
+  2: { name: 'Intermedio', key: 'intermedio', requires: { level: 1, minCompleted: 4 } },
+  3: { name: 'Avanzado',   key: 'avanzado',   requires: { level: 2, minCompleted: 4 } }
+};
+
+/* ── Estado persistente ── */
+const STORAGE_KEY = 'sqllab_v2_state';
+let State = {};
+let instructorMode = false;
+
+function emptyChallengeState(){
+  return {
+    attempts: 0,
+    failures: 0,
+    hintsUsed: 0,
+    solutionViewed: false,
+    solved: false,
+    solvedAt: null,
+    bestScore: null,
+    firstAttempt: null
+  };
+}
+function getState(id){
+  if(!State[id]) State[id] = emptyChallengeState();
+  return State[id];
+}
+function saveState(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(State)); }
+  catch(e){ console.warn('No se pudo guardar el estado:', e); }
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    State = raw ? (JSON.parse(raw) || {}) : {};
+  }catch(e){
+    console.warn('Estado corrupto, se reinicia:', e);
+    State = {};
+  }
+}
+
+/* ── Scoring (base 100) ──
+     −100 por pista
+     −50  por intento fallido
+     −10  si se reveló la solución
+     mínimo 0
+   ─────────────────────────────────── */
+function computeScore(s){
+  const raw = 100
+    - 100 * (s.hintsUsed || 0)
+    - 50  * (s.failures  || 0)
+    - (s.solutionViewed ? 10 : 0);
+  return Math.max(0, raw);
+}
+
+/* ── Registro de acciones ── */
+function registerAttempt(challengeId, correct){
+  const s = getState(challengeId);
+  s.attempts++;
+  if(correct){
+    s.solved = true;
+    if(!s.solvedAt) s.solvedAt = Date.now();
+    const score = computeScore(s);
+    if(s.bestScore === null || score > s.bestScore) s.bestScore = score;
+    if(s.firstAttempt === null){
+      s.firstAttempt = {
+        score,
+        hintsUsed: s.hintsUsed,
+        failures: s.failures,
+        solutionViewed: s.solutionViewed,
+        solvedAt: s.solvedAt
+      };
+    }
+  } else {
+    s.failures++;
+  }
+  saveState();
+  return s;
+}
+
+function registerHint(challengeId){
+  const s = getState(challengeId);
+  s.hintsUsed++;
+  saveState();
+  return s.hintsUsed;
+}
+
+function registerSolutionView(challengeId){
+  const s = getState(challengeId);
+  s.solutionViewed = true;
+  if(!s.solved){
+    s.solved = true;
+    s.solvedAt = Date.now();
+    const score = computeScore(s);
+    if(s.bestScore === null || score > s.bestScore) s.bestScore = score;
+  }
+  if(s.firstAttempt === null){
+    s.firstAttempt = {
+      score: computeScore(s),
+      hintsUsed: s.hintsUsed,
+      failures: s.failures,
+      solutionViewed: true,
+      solvedAt: s.solvedAt || Date.now()
+    };
+  }
+  saveState();
+  return s;
+}
+
+/* ── Bitácora / Reset ── */
+function clearBitacora(){
+  for(const arr of Object.values(CHALLENGES))
+    for(const c of arr){
+      const s = getState(c.id);
+      s.attempts = 0;
+      s.failures = 0;
+      s.hintsUsed = 0;
+      s.solutionViewed = false;
+    }
+  saveState();
+}
+
+function resetAll(){
+  State = {};
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+}
+
+/* ── Desbloqueo ── */
+function countSolvedInLevel(levelKey){
+  return (CHALLENGES[levelKey] || []).filter(c => getState(c.id).solved).length;
+}
+function isLevelUnlocked(levelNum){
+  if(instructorMode) return true;
+  if(levelNum === 1) return true;
+  const req = LEVELS[levelNum].requires;
+  return countSolvedInLevel(LEVELS[req.level].key) >= req.minCompleted;
+}
+function levelOfChallenge(challenge){
+  for(const [num, lvl] of Object.entries(LEVELS))
+    if((CHALLENGES[lvl.key] || []).some(c => c.id === challenge.id)) return Number(num);
+  return 1;
+}
+function isChallengeUnlocked(challenge){
+  return isLevelUnlocked(levelOfChallenge(challenge));
+}
+
+/* ── Métricas globales ── */
+function getProgress(){
+  let solved = 0, total = 0;
+  for(const arr of Object.values(CHALLENGES))
+    for(const c of arr){
+      total++;
+      if(getState(c.id).solved) solved++;
+    }
+  return { solved, total };
+}
+function getTotalPoints(){
+  let sum = 0;
+  for(const arr of Object.values(CHALLENGES))
+    for(const c of arr){
+      const s = getState(c.id);
+      if(s.bestScore !== null) sum += s.bestScore;
+    }
+  return sum;
+}
+function getTotalAttempts(){
+  let sum = 0;
+  for(const arr of Object.values(CHALLENGES))
+    for(const c of arr) sum += getState(c.id).attempts;
+  return sum;
+}
+function getTotalHints(){
+  let sum = 0;
+  for(const arr of Object.values(CHALLENGES))
+    for(const c of arr) sum += getState(c.id).hintsUsed;
+  return sum;
+}
+
+/* ── Formato ── */
+function formatScore(n){ return n === null ? '—' : String(n); }
+function formatFirstAttempt(f){ return f ? f.score + ' pts' : '—'; }
+
+/* ── Timer ── */
+let timerInterval = null;
+let secondsElapsed = 0;
+let timerRunning = false;
+
+function updateTimerDisplay(){
+  const el = $('stat-time');
+  if(el) el.textContent = fmtTime(secondsElapsed);
+}
+function startTimer(){
+  if(timerRunning) return;
+  timerRunning = true;
+  timerInterval = setInterval(() => { secondsElapsed++; updateTimerDisplay(); }, 1000);
+}
+function stopTimer(){
+  if(timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
+  timerRunning = false;
+}
+function resetTimer(){
+  stopTimer();
+  secondsElapsed = 0;
+  updateTimerDisplay();
+}
+
+/* ── Ejecución del SQL del alumno ── */
+function runUserSQL(sql){
+  const trimmed = (sql || '').trim();
+  if(!trimmed){
+    return { columns: [], values: [], error: 'La consulta está vacía. Escribe un SELECT.' };
+  }
+  try{
+    const r = sqlRun(trimmed, DB);
+    return {
+      ast: r.ast,
+      columns: r.columns,
+      values: r.rows.map(row => r.columns.map(c => row[c])),
+      error: null
+    };
+  } catch(e){
+    let msg = (e && e.message) ? e.message : String(e);
+    msg = msg.replace(/^Error:\s*/i, '');
+    return { columns: [], values: [], error: msg };
+  }
+}
+
+/* ── Schema textual del reto (para right-panel) ── */
+function schemaTextFor(tables){
+  if(!tables || !tables.length) return '—';
+  return tables.map(t => {
+    const tb = (typeof DB !== 'undefined' && DB[t]) ? DB[t] : null;
+    if(!tb) return 'CREATE TABLE ' + t + ' (... no encontrada);';
+    return 'CREATE TABLE ' + t + ' (\n  ' + tb.columns.join(',\n  ') + '\n);';
+  }).join('\n\n');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODAL (patrón SQLLab original)
+   ═══════════════════════════════════════════════════════════ */
+const RESET_PASSWORD = 'sql2024';
+
+let modalResolver = null;
+let modalInputValidator = null;
+
+function openModal({ title, body, confirmText = 'Aceptar', cancelText = 'Cancelar', danger = false, input = null }){
+  return new Promise(resolve => {
+    modalResolver = resolve;
+    modalInputValidator = (input && typeof input.validate === 'function') ? input.validate : null;
+
+    $('modal-title').textContent = title;
+    const bodyEl = $('modal-body');
+    bodyEl.innerHTML = body;
+
+    if(input){
+      const inputEl = document.createElement('input');
+      inputEl.type = input.type || 'text';
+      inputEl.id = 'modal-input';
+      inputEl.className = 'modal-input';
+      inputEl.placeholder = input.placeholder || '';
+      inputEl.setAttribute('autocomplete', 'off');
+      bodyEl.appendChild(inputEl);
+
+      const errEl = document.createElement('div');
+      errEl.id = 'modal-error';
+      errEl.style.cssText = 'color:#b03030;font-size:12.5px;margin-top:6px;min-height:16px;';
+      bodyEl.appendChild(errEl);
+
+      setTimeout(() => inputEl.focus(), 50);
+    } else {
+      setTimeout(() => $('modal-confirm').focus(), 50);
+    }
+
+    const confirmBtn = $('modal-confirm');
+    const cancelBtn  = $('modal-cancel');
+    confirmBtn.textContent = confirmText;
+    confirmBtn.className   = danger ? 'btn-danger' : 'btn-primary';
+    cancelBtn.textContent  = cancelText;
+
+    $('modal-overlay').classList.remove('hidden');
+  });
+}
+
+function closeModal(result){
+  $('modal-overlay').classList.add('hidden');
+  if(modalResolver){
+    const r = modalResolver;
+    modalResolver = null;
+    modalInputValidator = null;
+    r(result);
+  }
+}
+
+$('modal-confirm').addEventListener('click', () => {
+  const inputEl = $('modal-input');
+  if(inputEl){
+    const v = inputEl.value;
+    if(modalInputValidator){
+      const err = modalInputValidator(v);
+      if(err){
+        const errEl = $('modal-error');
+        if(errEl) errEl.textContent = err;
+        inputEl.focus();
+        inputEl.select();
+        return;
+      }
+    }
+    closeModal(v);
+  } else {
+    closeModal(true);
+  }
+});
+
+$('modal-cancel').addEventListener('click', () => closeModal(null));
+
+document.addEventListener('keydown', (e) => {
+  const overlay = $('modal-overlay');
+  if(!overlay || overlay.classList.contains('hidden')) return;
+  if(e.key === 'Escape'){
+    e.preventDefault();
+    closeModal(null);
+  } else if(e.key === 'Enter'){
+    const inputEl = $('modal-input');
+    if(inputEl && document.activeElement === inputEl){
+      e.preventDefault();
+      $('modal-confirm').click();
+    }
+  }
+});
+
+function confirmModal({ title, body, confirmText = 'Aceptar', cancelText = 'Cancelar', danger = false }){
+  return openModal({ title, body, confirmText, cancelText, danger });
+}
+function passwordModal({ title, body, confirmText = 'Confirmar', password }){
+  return openModal({
+    title, body, confirmText, danger: true,
+    input: {
+      type: 'password',
+      placeholder: 'Contraseña',
+      validate: v => v === password ? null : 'Contraseña incorrecta.'
+    }
+  });
+}
+
+/* ── Inicialización del estado ── */
+function initState(){
+  initChallenges();
+  loadState();
+  for(const arr of Object.values(CHALLENGES))
+    for(const c of arr){
+      const s = getState(c.id);
+      if(s.firstAttempt === undefined) s.firstAttempt = null;
+      if(s.bestScore   === undefined) s.bestScore   = null;
+    }
+  saveState();
+}
+/* ═══════════════════════════════════════════════════════════
+   BLOQUE 4 · BASE DE DATOS + 30 RETOS + VALIDACIÓN
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Base de datos de práctica ── */
+const DB = {
+  departamentos: {
+    columns: ['id', 'nombre'],
+    rows: [
+      {id: 1, nombre: 'Ventas'},
+      {id: 2, nombre: 'TI'},
+      {id: 3, nombre: 'RRHH'},
+      {id: 4, nombre: 'Marketing'},
+    ]
+  },
+  empleados: {
+    columns: ['id', 'nombre', 'apellido', 'depto_id', 'salario', 'fecha_ingreso'],
+    rows: [
+      {id: 1, nombre: 'Ana',    apellido: 'García',  depto_id: 1, salario: 3200, fecha_ingreso: '2020-03-15'},
+      {id: 2, nombre: 'Luis',   apellido: 'Pérez',   depto_id: 2, salario: 4500, fecha_ingreso: '2019-07-01'},
+      {id: 3, nombre: 'Marta',  apellido: 'Ruiz',    depto_id: 1, salario: 2800, fecha_ingreso: '2021-01-10'},
+      {id: 4, nombre: 'Pedro',  apellido: 'Sánchez', depto_id: 3, salario: 2100, fecha_ingreso: '2022-05-20'},
+      {id: 5, nombre: 'Sofía',  apellido: 'López',   depto_id: 2, salario: 5100, fecha_ingreso: '2018-11-05'},
+      {id: 6, nombre: 'Andrés', apellido: 'Mora',    depto_id: 4, salario: 3900, fecha_ingreso: '2020-09-14'},
+      {id: 7, nombre: 'Carla',  apellido: 'Díaz',    depto_id: 1, salario: 2200, fecha_ingreso: '2023-02-01'},
+      {id: 8, nombre: 'Jorge',  apellido: 'Vega',    depto_id: 3, salario: 1800, fecha_ingreso: '2021-08-30'},
+    ]
+  },
+  ventas: {
+    columns: ['id', 'empleado_id', 'monto', 'fecha'],
+    rows: [
+      {id: 1, empleado_id: 1, monto: 1200, fecha: '2024-01-15'},
+      {id: 2, empleado_id: 1, monto: 800,  fecha: '2024-02-20'},
+      {id: 3, empleado_id: 2, monto: 2500, fecha: '2024-01-10'},
+      {id: 4, empleado_id: 4, monto: 500,  fecha: '2024-03-05'},
+      {id: 5, empleado_id: 6, monto: 1800, fecha: '2024-02-14'},
+      {id: 6, empleado_id: 3, monto: 950,  fecha: '2024-03-22'},
+      {id: 7, empleado_id: 1, monto: 1400, fecha: '2024-04-01'},
+      {id: 8, empleado_id: 5, monto: 3000, fecha: '2024-01-25'},
+    ]
+  }
+};
+
+/* ── Comparación de resultados ── */
+function normVal(v){
+  if(v === null || v === undefined) return null;
+  if(typeof v === 'number') return Math.round(v * 1e6) / 1e6;
+  return String(v);
+}
+function sqlCheck(result, expectedSql, opts = {}){
+  let expected;
+  try { expected = sqlRun(expectedSql, DB); }
+  catch(e){ return {ok: false, msg: 'Error interno: ' + e.message}; }
+
+  if(result.columns.length !== expected.columns.length){
+    return {ok: false, msg: 'Se esperaban ' + expected.columns.length +
+      ' columna(s), tu consulta devuelve ' + result.columns.length + '.'};
+  }
+  if(result.rows.length !== expected.rows.length){
+    return {ok: false, msg: 'Se esperaban ' + expected.rows.length +
+      ' fila(s), tu consulta devuelve ' + result.rows.length + '.'};
+  }
+
+  const mapped = result.rows.map(r =>
+    expected.columns.map((_, i) => normVal(r[result.columns[i]]))
+  );
+  const target = expected.rows.map(r =>
+    expected.columns.map(c => normVal(r[c]))
+  );
+
+  if(opts.ordered){
+    if(JSON.stringify(mapped) === JSON.stringify(target))
+      return {ok: true, msg: '¡Correcto!'};
+    const aS = mapped.map(r => JSON.stringify(r)).sort();
+    const tS = target.map(r => JSON.stringify(r)).sort();
+    if(JSON.stringify(aS) === JSON.stringify(tS))
+      return {ok: false, msg: 'Los datos son correctos pero el ORDEN no. Revisa tu ORDER BY.'};
+    return {ok: false, msg: 'El contenido no coincide con lo esperado.'};
+  }
+
+  const aS = mapped.map(r => JSON.stringify(r)).sort();
+  const tS = target.map(r => JSON.stringify(r)).sort();
+  if(JSON.stringify(aS) !== JSON.stringify(tS)){
+    return {ok: false, msg: 'Las filas devueltas no coinciden con lo esperado.'};
+  }
+  return {ok: true, msg: '¡Correcto!'};
+}
+
+/* ── Ejecución del SQL del alumno ── */
+function runUserSQL(sql){
+  const trimmed = (sql || '').trim();
+  if(!trimmed){
+    return { columns: [], rows: [], error: 'La consulta está vacía. Escribe un SELECT.', ast: null };
+  }
+  try{
+    const r = sqlRun(trimmed, DB);
+    return { ast: r.ast, columns: r.columns, rows: r.rows, error: null };
+  } catch(e){
+    let msg = (e && e.message) ? e.message : String(e);
+    msg = msg.replace(/^Error:\s*/i, '');
+    return { columns: [], rows: [], error: msg, ast: null };
+  }
+}
+
+/* ── validateQuery · contrato uniforme para acciones y examen ── */
+function validateQuery(challenge, userSQL){
+  const exec = runUserSQL(userSQL);
+  if(exec.error){
+    return { correct: false, reason: 'error', message: 'Error de SQL: ' + exec.error, actual: exec };
+  }
+  let r;
+  try{ r = challenge.check(exec, exec.ast); }
+  catch(e){ return { correct: false, reason: 'internal',
+                     message: 'Error al validar: ' + e.message, actual: exec }; }
+  return {
+    correct: !!r.ok,
+    reason: r.ok ? 'ok' : 'values',
+    message: r.msg || '',
+    actual: exec
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RETOS · NIVEL BÁSICO (10)
+   ═══════════════════════════════════════════════════════════ */
+const BASIC = [
+  {
+    id: 'b01', title: 'B-01 · Selección de columnas',
+    brief: 'La tabla empleados tiene 6 columnas, pero solo necesitas dos.',
+    task: 'Devuelve el nombre y el salario de TODOS los empleados.',
+    tables: ['empleados'],
+    solution: 'SELECT nombre, salario FROM empleados',
+    hints: [
+      'Usa SELECT con los nombres de las columnas separados por coma.',
+      'SELECT nombre, salario FROM empleados'
+    ],
+    check(result){ return sqlCheck(result, 'SELECT nombre, salario FROM empleados'); }
+  },
+  {
+    id: 'b02', title: 'B-02 · WHERE con comparación',
+    brief: 'Necesitas saber quiénes ganan más de 3000 al mes.',
+    task: 'Devuelve nombre y salario de los empleados con salario mayor a 3000.',
+    tables: ['empleados'],
+    solution: 'SELECT nombre, salario FROM empleados WHERE salario > 3000',
+    hints: [
+      'WHERE se escribe después de FROM y filtra las filas con una condición.',
+      'SELECT nombre, salario FROM empleados WHERE salario > 3000'
+    ],
+    check(result){ return sqlCheck(result, 'SELECT nombre, salario FROM empleados WHERE salario > 3000'); }
+  },
+  {
+    id: 'b03', title: 'B-03 · WHERE con texto',
+    brief: 'Los textos en SQL van entre comillas simples.',
+    task: 'Devuelve nombre y apellido del empleado cuyo apellido es exactamente "López".',
+    tables: ['empleados'],
+    solution: "SELECT nombre, apellido FROM empleados WHERE apellido = 'López'",
+    hints: [
+      "Usa = para comparar textos: WHERE apellido = 'López'. Respeta los acentos.",
+      "SELECT nombre, apellido FROM empleados WHERE apellido = 'López'"
+    ],
+    check(result){ return sqlCheck(result, "SELECT nombre, apellido FROM empleados WHERE apellido = 'López'"); }
+  },
+  {
+    id: 'b04', title: 'B-04 · ORDER BY ascendente',
+    brief: 'Ordenar resultados es una de las operaciones más frecuentes.',
+    task: 'Devuelve nombre y salario de TODOS los empleados, ordenados por salario de menor a mayor.',
+    tables: ['empleados'],
+    solution: 'SELECT nombre, salario FROM empleados ORDER BY salario ASC',
+    hints: [
+      'ORDER BY va al final de la consulta. ASC (o nada) ordena de menor a mayor.',
+      'SELECT nombre, salario FROM empleados ORDER BY salario ASC'
+    ],
+    check(result, ast){
+      if(!ast.orderBy) return {ok: false, msg: 'Debes usar ORDER BY para ordenar el resultado.'};
+      return sqlCheck(result, 'SELECT nombre, salario FROM empleados ORDER BY salario ASC', {ordered: true});
+    }
+  },
+  {
+    id: 'b05', title: 'B-05 · ORDER BY + LIMIT',
+    brief: 'Combinando ORDER BY y LIMIT obtienes "los N más…".',
+    task: 'Devuelve nombre y salario de los 3 empleados con salario más alto (de mayor a menor).',
+    tables: ['empleados'],
+    solution: 'SELECT nombre, salario FROM empleados ORDER BY salario DESC LIMIT 3',
+    hints: [
+      'Combina ORDER BY … DESC para traer primero los mayores y LIMIT 3 para quedarte con tres.',
+      'SELECT nombre, salario FROM empleados ORDER BY salario DESC LIMIT 3'
+    ],
+    check(result, ast){
+      if(!ast.orderBy) return {ok: false, msg: 'Debes usar ORDER BY salario DESC.'};
+      if(ast.limit === null) return {ok: false, msg: 'Debes usar LIMIT 3.'};
+      return sqlCheck(result, 'SELECT nombre, salario FROM empleados ORDER BY salario DESC LIMIT 3', {ordered: true});
+    }
+  },
+  {
+    id: 'b06', title: 'B-06 · DISTINCT',
+    brief: 'DISTINCT elimina duplicados del resultado.',
+    task: 'Devuelve los valores distintos de depto_id en la tabla empleados.',
+    tables: ['empleados'],
+    solution: 'SELECT DISTINCT depto_id FROM empleados',
+    hints: [
+      'Escribe DISTINCT justo después de SELECT.',
+      'SELECT DISTINCT depto_id FROM empleados'
+    ],
+    check(result, ast){
+      if(!ast.distinct) return {ok: false, msg: 'Debes usar DISTINCT en el SELECT.'};
+      return sqlCheck(result, 'SELECT DISTINCT depto_id FROM empleados');
+    }
+  },
+  {
+    id: 'b07', title: 'B-07 · COUNT',
+    brief: 'COUNT cuenta filas. Con COUNT(*) cuenta todas las filas del grupo.',
+    task: 'Devuelve en una sola fila cuántos empleados hay en total.',
+    tables: ['empleados'],
+    solution: 'SELECT COUNT(*) FROM empleados',
+    hints: [
+      'COUNT(*) cuenta todas las filas. Devuelve una sola fila con el total.',
+      'SELECT COUNT(*) FROM empleados'
+    ],
+    check(result){ return sqlCheck(result, 'SELECT COUNT(*) FROM empleados'); }
+  },
+  {
+    id: 'b08', title: 'B-08 · WHERE con AND',
+    brief: 'AND combina dos condiciones: ambas deben cumplirse.',
+    task: 'Devuelve nombre y salario de los empleados con salario mayor a 2000 que pertenezcan al depto_id = 1.',
+    tables: ['empleados'],
+    solution: 'SELECT nombre, salario FROM empleados WHERE salario > 2000 AND depto_id = 1',
+    hints: [
+      'Combina dos condiciones con AND en el WHERE.',
+      'SELECT nombre, salario FROM empleados WHERE salario > 2000 AND depto_id = 1'
+    ],
+    check(result){ return sqlCheck(result, 'SELECT nombre, salario FROM empleados WHERE salario > 2000 AND depto_id = 1'); }
+  },
+  {
+    id: 'b09', title: 'B-09 · BETWEEN',
+    brief: 'BETWEEN a AND b equivale a un rango cerrado (incluye extremos).',
+    task: 'Devuelve nombre y salario de los empleados con salario entre 2000 y 4000 (ambos inclusive).',
+    tables: ['empleados'],
+    solution: 'SELECT nombre, salario FROM empleados WHERE salario BETWEEN 2000 AND 4000',
+    hints: [
+      'BETWEEN va dentro del WHERE: salario BETWEEN 2000 AND 4000.',
+      'SELECT nombre, salario FROM empleados WHERE salario BETWEEN 2000 AND 4000'
+    ],
+    check(result){ return sqlCheck(result, 'SELECT nombre, salario FROM empleados WHERE salario BETWEEN 2000 AND 4000'); }
+  },
+  {
+    id: 'b10', title: 'B-10 · LIKE',
+    brief: 'LIKE busca patrones: % representa "cualquier cantidad de caracteres".',
+    task: 'Devuelve nombre y salario de los empleados cuyo nombre empiece con "A".',
+    tables: ['empleados'],
+    solution: "SELECT nombre, salario FROM empleados WHERE nombre LIKE 'A%'",
+    hints: [
+      "El patrón 'A%' significa: empieza por A y luego lo que sea.",
+      "SELECT nombre, salario FROM empleados WHERE nombre LIKE 'A%'"
+    ],
+    check(result){ return sqlCheck(result, "SELECT nombre, salario FROM empleados WHERE nombre LIKE 'A%'"); }
+  },
+];
+
+/* ═══════════════════════════════════════════════════════════
+   RETOS · NIVEL INTERMEDIO (10)
+   ═══════════════════════════════════════════════════════════ */
+const INTER = [
+  {
+    id: 'i01', title: 'I-01 · GROUP BY + COUNT',
+    brief: 'GROUP BY agrupa filas que comparten un valor. Con COUNT cuentas cuántas hay en cada grupo.',
+    task: 'Devuelve depto_id y cuántos empleados hay en cada departamento. Usa GROUP BY depto_id.',
+    tables: ['empleados'],
+    solution: 'SELECT depto_id, COUNT(*) FROM empleados GROUP BY depto_id',
+    hints: [
+      'GROUP BY va después del WHERE (o después de FROM si no hay WHERE). Agrupa por depto_id.',
+      'SELECT depto_id, COUNT(*) FROM empleados GROUP BY depto_id'
+    ],
+    check(result, ast){
+      if(!ast.groupBy) return {ok: false, msg: 'Debes usar GROUP BY depto_id.'};
+      return sqlCheck(result, 'SELECT depto_id, COUNT(*) FROM empleados GROUP BY depto_id');
+    }
+  },
+  {
+    id: 'i02', title: 'I-02 · GROUP BY + SUM',
+    brief: 'SUM acumula valores dentro de cada grupo.',
+    task: 'Devuelve empleado_id y la suma total de sus ventas (columna monto) de la tabla ventas. Agrupa por empleado_id.',
+    tables: ['ventas'],
+    solution: 'SELECT empleado_id, SUM(monto) FROM ventas GROUP BY empleado_id',
+    hints: [
+      'La columna a sumar es monto. Agrupa por empleado_id.',
+      'SELECT empleado_id, SUM(monto) FROM ventas GROUP BY empleado_id'
+    ],
+    check(result, ast){
+      if(!ast.groupBy) return {ok: false, msg: 'Debes usar GROUP BY empleado_id.'};
+      return sqlCheck(result, 'SELECT empleado_id, SUM(monto) FROM ventas GROUP BY empleado_id');
+    }
+  },
+  {
+    id: 'i03', title: 'I-03 · GROUP BY + AVG',
+    brief: 'AVG calcula el promedio aritmético de los valores del grupo.',
+    task: 'Devuelve depto_id y el salario promedio de cada departamento. Usa AVG sobre la columna salario.',
+    tables: ['empleados'],
+    solution: 'SELECT depto_id, AVG(salario) FROM empleados GROUP BY depto_id',
+    hints: [
+      'AVG(salario) devuelve el promedio por grupo. Agrupa por depto_id.',
+      'SELECT depto_id, AVG(salario) FROM empleados GROUP BY depto_id'
+    ],
+    check(result, ast){
+      if(!ast.groupBy) return {ok: false, msg: 'Debes usar GROUP BY depto_id.'};
+      return sqlCheck(result, 'SELECT depto_id, AVG(salario) FROM empleados GROUP BY depto_id');
+    }
+  },
+  {
+    id: 'i04', title: 'I-04 · HAVING',
+    brief: 'HAVING filtra GRUPOS, no filas. Es como un WHERE que actúa después de agrupar.',
+    task: 'Devuelve depto_id y cuántos empleados tiene, SOLO para departamentos con más de 2 empleados.',
+    tables: ['empleados'],
+    solution: 'SELECT depto_id, COUNT(*) FROM empleados GROUP BY depto_id HAVING COUNT(*) > 2',
+    hints: [
+      'HAVING va después de GROUP BY. Compara el resultado de la función de agregado: HAVING COUNT(*) > 2.',
+      'SELECT depto_id, COUNT(*) FROM empleados GROUP BY depto_id HAVING COUNT(*) > 2'
+    ],
+    check(result, ast){
+      if(!ast.having) return {ok: false, msg: 'Debes usar HAVING COUNT(*) > 2.'};
+      return sqlCheck(result, 'SELECT depto_id, COUNT(*) FROM empleados GROUP BY depto_id HAVING COUNT(*) > 2');
+    }
+  },
+  {
+    id: 'i05', title: 'I-05 · INNER JOIN',
+    brief: 'JOIN combina filas de dos tablas por una condición (ON). Los alias de tabla y columna ayudan a no confundir columnas con el mismo nombre.',
+    task: 'Devuelve el nombre del empleado (alias empleado) y el nombre del departamento (alias departamento) para cada empleado, uniendo por depto_id = departamentos.id.',
+    tables: ['empleados', 'departamentos'],
+    solution: 'SELECT e.nombre AS empleado, d.nombre AS departamento FROM empleados e JOIN departamentos d ON e.depto_id = d.id',
+    hints: [
+      'Usa JOIN … ON … para unir las dos tablas por la clave foránea. Pon un alias corto a cada tabla (empleados e, departamentos d).',
+      'Como ambas tablas tienen columna "nombre", usa AS para renombrar los resultados: e.nombre AS empleado, d.nombre AS departamento.'
+    ],
+    check(result, ast){
+      if(!ast.joins || !ast.joins.length) return {ok: false, msg: 'Debes usar JOIN … ON … para unir empleados con departamentos.'};
+      if(result.columns[0] === result.columns[1]){
+        return {ok: false, msg: 'Ambas columnas se llaman igual. Usa alias: e.nombre AS empleado, d.nombre AS departamento.'};
+      }
+      return sqlCheck(result, 'SELECT e.nombre AS empleado, d.nombre AS departamento FROM empleados e JOIN departamentos d ON e.depto_id = d.id');
+    }
+  },
+  {
+    id: 'i06', title: 'I-06 · LEFT JOIN + IS NULL',
+    brief: 'LEFT JOIN conserva las filas de la izquierda aunque no tengan coincidencia. Si no hay coincidencia, las columnas de la derecha quedan como NULL.',
+    task: 'Devuelve el nombre (alias empleado) SOLO de los empleados que NO tienen ninguna venta. Usa LEFT JOIN ventas y filtra por v.id IS NULL.',
+    tables: ['empleados', 'ventas'],
+    solution: 'SELECT e.nombre AS empleado FROM empleados e LEFT JOIN ventas v ON e.id = v.empleado_id WHERE v.id IS NULL',
+    hints: [
+      'Un LEFT JOIN deja NULL en las columnas de ventas cuando el empleado no tiene ventas. Filtra con WHERE v.id IS NULL para detectar esos casos.',
+      'SELECT e.nombre AS empleado FROM empleados e LEFT JOIN ventas v ON e.id = v.empleado_id WHERE v.id IS NULL'
+    ],
+    check(result, ast){
+      if(!ast.joins || !ast.joins.length || ast.joins[0].type !== 'LEFT'){
+        return {ok: false, msg: 'Debes usar LEFT JOIN ventas …'};
+      }
+      if(!ast.where) return {ok: false, msg: 'Falta el WHERE … IS NULL para filtrar los que no tienen ventas.'};
+      return sqlCheck(result, 'SELECT e.nombre AS empleado FROM empleados e LEFT JOIN ventas v ON e.id = v.empleado_id WHERE v.id IS NULL');
+    }
+  },
+  {
+    id: 'i07', title: 'I-07 · CASE WHEN',
+    brief: 'CASE WHEN … THEN … END clasifica cada fila según una condición, devolviendo valores distintos según el caso. Es el IF de SQL.',
+    task: 'Devuelve nombre, salario y una columna categoria: "Alto" si salario ≥ 4000, "Medio" si salario ≥ 2500, "Bajo" en otro caso.',
+    tables: ['empleados'],
+    solution: "SELECT nombre, salario, CASE WHEN salario >= 4000 THEN 'Alto' WHEN salario >= 2500 THEN 'Medio' ELSE 'Bajo' END AS categoria FROM empleados",
+    hints: [
+      'CASE WHEN cond1 THEN valor1 WHEN cond2 THEN valor2 ELSE valorDefault END. La primera condición que se cumple gana.',
+      "SELECT nombre, salario, CASE WHEN salario >= 4000 THEN 'Alto' WHEN salario >= 2500 THEN 'Medio' ELSE 'Bajo' END AS categoria FROM empleados"
+    ],
+    check(result){
+      return sqlCheck(result, "SELECT nombre, salario, CASE WHEN salario >= 4000 THEN 'Alto' WHEN salario >= 2500 THEN 'Medio' ELSE 'Bajo' END AS categoria FROM empleados");
+    }
+  },
+  {
+    id: 'i08', title: 'I-08 · UPPER + ROUND',
+    brief: 'UPPER convierte texto a mayúsculas; ROUND redondea a N decimales. Puedes usar ambas en el mismo SELECT.',
+    task: 'Devuelve nombre en mayúsculas (alias nombre) y salario_por_dia = ROUND(salario/22, 2) para cada empleado.',
+    tables: ['empleados'],
+    solution: 'SELECT UPPER(nombre) AS nombre, ROUND(salario/22, 2) AS salario_por_dia FROM empleados',
+    hints: [
+      'UPPER(nombre) pone en mayúsculas. ROUND(salario/22, 2) redondea el cociente a 2 decimales. Usa AS para nombrar cada columna.',
+      'SELECT UPPER(nombre) AS nombre, ROUND(salario/22, 2) AS salario_por_dia FROM empleados'
+    ],
+    check(result){
+      return sqlCheck(result, 'SELECT UPPER(nombre) AS nombre, ROUND(salario/22, 2) AS salario_por_dia FROM empleados');
+    }
+  },
+  {
+    id: 'i09', title: 'I-09 · Subconsulta con IN',
+    brief: 'Una subconsulta entre paréntesis puede alimentar un IN del WHERE.',
+    task: 'Devuelve el nombre de los empleados que SÍ tienen al menos una venta. Resuélvelo con WHERE id IN (SELECT empleado_id FROM ventas).',
+    tables: ['empleados', 'ventas'],
+    solution: 'SELECT nombre FROM empleados WHERE id IN (SELECT empleado_id FROM ventas)',
+    hints: [
+      'La subconsulta SELECT empleado_id FROM ventas devuelve una lista de ids. Úsala dentro de IN (...).',
+      'SELECT nombre FROM empleados WHERE id IN (SELECT empleado_id FROM ventas)'
+    ],
+    check(result, ast){
+      const hasSub = JSON.stringify(ast).includes('"subquery"');
+      if(!hasSub) return {ok: false, msg: 'Debes usar IN (SELECT …) como subconsulta, no una lista literal.'};
+      return sqlCheck(result, 'SELECT nombre FROM empleados WHERE id IN (SELECT empleado_id FROM ventas)');
+    }
+  },
+  {
+    id: 'i10', title: 'I-10 · Varios agregados juntos',
+    brief: 'Puedes combinar varios agregados en un solo SELECT cuando no hay GROUP BY: se aplican a toda la tabla (o al subconjunto del WHERE).',
+    task: 'Para los empleados del depto_id = 1, devuelve 4 columnas: total (COUNT(*)), promedio (AVG del salario), maximo (MAX del salario) y minimo (MIN del salario).',
+    tables: ['empleados'],
+    solution: 'SELECT COUNT(*) AS total, AVG(salario) AS promedio, MAX(salario) AS maximo, MIN(salario) AS minimo FROM empleados WHERE depto_id = 1',
+    hints: [
+      'No necesitas GROUP BY: un agregado sin GROUP BY resume toda la selección en una sola fila. Añade WHERE depto_id = 1.',
+      'SELECT COUNT(*) AS total, AVG(salario) AS promedio, MAX(salario) AS maximo, MIN(salario) AS minimo FROM empleados WHERE depto_id = 1'
+    ],
+    check(result){
+      return sqlCheck(result, 'SELECT COUNT(*) AS total, AVG(salario) AS promedio, MAX(salario) AS maximo, MIN(salario) AS minimo FROM empleados WHERE depto_id = 1');
+    }
+  },
+];
+
+/* ═══════════════════════════════════════════════════════════
+   RETOS · NIVEL AVANZADO (10)
+   ═══════════════════════════════════════════════════════════ */
+const ADV = [
+  {
+    id: 'a01', title: 'A-01 · Top vendedor',
+    brief: 'Combina JOIN + GROUP BY + ORDER BY + LIMIT para encontrar al empleado con mayor total de ventas.',
+    task: 'Devuelve el nombre del empleado (alias empleado) y su total vendido (alias total) SOLO del empleado con mayor total. Ordena por total DESC y usa LIMIT 1.',
+    tables: ['empleados', 'ventas'],
+    solution: 'SELECT e.nombre AS empleado, SUM(v.monto) AS total FROM empleados e JOIN ventas v ON e.id = v.empleado_id GROUP BY e.id, e.nombre ORDER BY total DESC LIMIT 1',
+    hints: [
+      'Primero une empleados con ventas por empleado_id = id. Agrupa por empleado para poder sumar sus ventas.',
+      'Con ORDER BY total DESC LIMIT 1 te quedas con el primero. Usa AS para nombrar las columnas empleado y total.'
+    ],
+    check(result, ast){
+      if(!ast.joins || !ast.joins.length) return {ok:false, msg:'Debes usar JOIN entre empleados y ventas.'};
+      if(!ast.groupBy) return {ok:false, msg:'Debes agrupar por empleado (GROUP BY).'};
+      if(!ast.orderBy) return {ok:false, msg:'Debes usar ORDER BY total DESC.'};
+      if(ast.limit === null) return {ok:false, msg:'Debes usar LIMIT 1.'};
+      return sqlCheck(result,
+        'SELECT e.nombre AS empleado, SUM(v.monto) AS total FROM empleados e JOIN ventas v ON e.id = v.empleado_id GROUP BY e.id, e.nombre ORDER BY total DESC LIMIT 1',
+        {ordered: true});
+    }
+  },
+  {
+    id: 'a02', title: 'A-02 · Departamentos grandes',
+    brief: 'HAVING puede filtrar por el resultado de un agregado. Combinado con LEFT JOIN, cuenta incluso departamentos con empleados nulos.',
+    task: 'Devuelve el nombre del departamento (alias departamento) y cuántos empleados tiene (alias empleados), SOLO para los que tienen 2 o más empleados. Ordena por empleados DESC.',
+    tables: ['departamentos', 'empleados'],
+    solution: 'SELECT d.nombre AS departamento, COUNT(e.id) AS empleados FROM departamentos d LEFT JOIN empleados e ON d.id = e.depto_id GROUP BY d.id, d.nombre HAVING COUNT(e.id) >= 2 ORDER BY empleados DESC',
+    hints: [
+      'Usa LEFT JOIN de departamentos hacia empleados. Agrupa por d.id y d.nombre, y cuenta COUNT(e.id).',
+      'HAVING COUNT(e.id) >= 2 filtra los grupos. Al final ORDER BY empleados DESC.'
+    ],
+    check(result, ast){
+      if(!ast.joins || !ast.joins.length || ast.joins[0].type !== 'LEFT') return {ok:false, msg:'Debes usar LEFT JOIN desde departamentos.'};
+      if(!ast.groupBy) return {ok:false, msg:'Debes agrupar por el departamento.'};
+      if(!ast.having) return {ok:false, msg:'Debes usar HAVING COUNT(e.id) >= 2.'};
+      if(!ast.orderBy) return {ok:false, msg:'Debes ordenar por empleados DESC.'};
+      return sqlCheck(result,
+        'SELECT d.nombre AS departamento, COUNT(e.id) AS empleados FROM departamentos d LEFT JOIN empleados e ON d.id = e.depto_id GROUP BY d.id, d.nombre HAVING COUNT(e.id) >= 2 ORDER BY empleados DESC',
+        {ordered: true});
+    }
+  },
+  {
+    id: 'a03', title: 'A-03 · Por encima del promedio',
+    brief: 'Una subconsulta escalar entre paréntesis devuelve UN valor que puedes usar en WHERE como si fuera un número.',
+    task: 'Devuelve nombre y salario de los empleados que ganan MÁS que el salario promedio de todos los empleados. La comparación debe usar una subconsulta (SELECT AVG(...)).',
+    tables: ['empleados'],
+    solution: 'SELECT nombre, salario FROM empleados WHERE salario > (SELECT AVG(salario) FROM empleados)',
+    hints: [
+      'La subconsulta (SELECT AVG(salario) FROM empleados) devuelve un único número. Compáralo con WHERE salario > …',
+      'SELECT nombre, salario FROM empleados WHERE salario > (SELECT AVG(salario) FROM empleados)'
+    ],
+    check(result, ast){
+      const hasSub = JSON.stringify(ast).includes('"subquery"');
+      if(!hasSub) return {ok:false, msg:'Debes usar una subconsulta (SELECT AVG(...)) dentro del WHERE, no un número fijo.'};
+      return sqlCheck(result, 'SELECT nombre, salario FROM empleados WHERE salario > (SELECT AVG(salario) FROM empleados)');
+    }
+  },
+  {
+    id: 'a04', title: 'A-04 · Pivot con SUM + CASE',
+    brief: 'SUM(CASE WHEN condición THEN 1 ELSE 0 END) cuenta cuántas filas cumplen una condición. Combinando varios, obtienes una tabla pivot.',
+    task: 'Para cada departamento (nombre de d), devuelve 3 columnas: departamento (alias d.nombre), altos (cuántos empleados con salario >= 3000) y bajos (cuántos con salario < 3000). Ordena por d.id.',
+    tables: ['departamentos', 'empleados'],
+    solution: 'SELECT d.nombre AS departamento, SUM(CASE WHEN e.salario >= 3000 THEN 1 ELSE 0 END) AS altos, SUM(CASE WHEN e.salario < 3000 THEN 1 ELSE 0 END) AS bajos FROM departamentos d LEFT JOIN empleados e ON d.id = e.depto_id GROUP BY d.id, d.nombre ORDER BY d.id',
+    hints: [
+      'Usa dos SUM(CASE WHEN … THEN 1 ELSE 0 END) como columnas. Agrupa por departamento.',
+      'SUM(CASE WHEN e.salario >= 3000 THEN 1 ELSE 0 END) AS altos, SUM(CASE WHEN e.salario < 3000 THEN 1 ELSE 0 END) AS bajos.'
+    ],
+    check(result, ast){
+      if(!ast.joins || !ast.joins.length || ast.joins[0].type !== 'LEFT') return {ok:false, msg:'Debes usar LEFT JOIN desde departamentos.'};
+      if(!ast.groupBy) return {ok:false, msg:'Debes agrupar por el departamento.'};
+      return sqlCheck(result,
+        'SELECT d.nombre AS departamento, SUM(CASE WHEN e.salario >= 3000 THEN 1 ELSE 0 END) AS altos, SUM(CASE WHEN e.salario < 3000 THEN 1 ELSE 0 END) AS bajos FROM departamentos d LEFT JOIN empleados e ON d.id = e.depto_id GROUP BY d.id, d.nombre ORDER BY d.id',
+        {ordered: true});
+    }
+  },
+  {
+    id: 'a05', title: 'A-05 · Filtro por nombre de departamento',
+    brief: 'Una subconsulta con IN te permite filtrar usando una tabla que no aparece en el SELECT.',
+    task: 'Devuelve nombre y salario de los empleados que pertenecen al departamento llamado "TI". Debes usar WHERE depto_id IN (SELECT id FROM departamentos WHERE nombre = \'TI\').',
+    tables: ['empleados', 'departamentos'],
+    solution: "SELECT nombre, salario FROM empleados WHERE depto_id IN (SELECT id FROM departamentos WHERE nombre = 'TI')",
+    hints: [
+      "No puedes escribir el id directamente: primero debes buscar el id del departamento 'TI' con una subconsulta.",
+      "SELECT nombre, salario FROM empleados WHERE depto_id IN (SELECT id FROM departamentos WHERE nombre = 'TI')"
+    ],
+    check(result, ast){
+      const hasSub = JSON.stringify(ast).includes('"subquery"');
+      if(!hasSub) return {ok:false, msg:'Debes usar IN (SELECT id FROM departamentos …).'};
+      return sqlCheck(result, "SELECT nombre, salario FROM empleados WHERE depto_id IN (SELECT id FROM departamentos WHERE nombre = 'TI')");
+    }
+  },
+  {
+    id: 'a06', title: 'A-06 · Empleados sin ventas (NOT IN)',
+    brief: 'NOT IN (subconsulta) es la alternativa clásica al LEFT JOIN … IS NULL.',
+    task: 'Devuelve el nombre de los empleados que NO tienen ninguna venta. Usa WHERE id NOT IN (SELECT empleado_id FROM ventas).',
+    tables: ['empleados', 'ventas'],
+    solution: 'SELECT nombre FROM empleados WHERE id NOT IN (SELECT empleado_id FROM ventas)',
+    hints: [
+      'La subconsulta (SELECT empleado_id FROM ventas) devuelve los ids que SÍ vendieron. Los que no aparecen en esa lista son los que no vendieron.',
+      'SELECT nombre FROM empleados WHERE id NOT IN (SELECT empleado_id FROM ventas)'
+    ],
+    check(result, ast){
+      const s = JSON.stringify(ast);
+      if(!s.includes('"subquery"')) return {ok:false, msg:'Debes usar una subconsulta (SELECT empleado_id FROM ventas).'};
+      if(!s.includes('"not":true')) return {ok:false, msg:'Debes usar NOT IN, no IN.'};
+      return sqlCheck(result, 'SELECT nombre FROM empleados WHERE id NOT IN (SELECT empleado_id FROM ventas)');
+    }
+  },
+  {
+    id: 'a07', title: 'A-07 · Vendedores destacados',
+    brief: 'JOIN + GROUP BY + HAVING para filtrar por suma y ORDENAR por esa suma.',
+    task: 'Devuelve el nombre (alias empleado) y total vendido (alias total) de los empleados cuya SUMA de ventas supere 2000. Ordena por total DESC.',
+    tables: ['empleados', 'ventas'],
+    solution: 'SELECT e.nombre AS empleado, SUM(v.monto) AS total FROM empleados e JOIN ventas v ON e.id = v.empleado_id GROUP BY e.id, e.nombre HAVING SUM(v.monto) > 2000 ORDER BY total DESC',
+    hints: [
+      'Une empleados con ventas (JOIN), agrupa por empleado, y usa HAVING SUM(v.monto) > 2000.',
+      'Al final ORDER BY total DESC para ver primero al que más vendió.'
+    ],
+    check(result, ast){
+      if(!ast.joins || !ast.joins.length) return {ok:false, msg:'Debes usar JOIN entre empleados y ventas.'};
+      if(!ast.groupBy) return {ok:false, msg:'Debes agrupar por empleado.'};
+      if(!ast.having) return {ok:false, msg:'Debes usar HAVING SUM(v.monto) > 2000.'};
+      if(!ast.orderBy) return {ok:false, msg:'Debes ordenar por total DESC.'};
+      return sqlCheck(result,
+        'SELECT e.nombre AS empleado, SUM(v.monto) AS total FROM empleados e JOIN ventas v ON e.id = v.empleado_id GROUP BY e.id, e.nombre HAVING SUM(v.monto) > 2000 ORDER BY total DESC',
+        {ordered: true});
+    }
+  },
+  {
+    id: 'a08', title: 'A-08 · Ventas del primer trimestre',
+    brief: 'BETWEEN también funciona con textos si las fechas están en formato ISO (YYYY-MM-DD): se comparan lexicográficamente.',
+    task: 'Devuelve id, monto y fecha de las ventas entre 2024-01-01 y 2024-03-31 (ambas inclusive). Ordena por fecha ASC.',
+    tables: ['ventas'],
+    solution: "SELECT id, monto, fecha FROM ventas WHERE fecha BETWEEN '2024-01-01' AND '2024-03-31' ORDER BY fecha ASC",
+    hints: [
+      "Usa BETWEEN con las fechas entre comillas simples: fecha BETWEEN '2024-01-01' AND '2024-03-31'.",
+      "SELECT id, monto, fecha FROM ventas WHERE fecha BETWEEN '2024-01-01' AND '2024-03-31' ORDER BY fecha ASC"
+    ],
+    check(result, ast){
+      if(!ast.where) return {ok:false, msg:'Debes usar WHERE … BETWEEN.'};
+      if(!ast.orderBy) return {ok:false, msg:'Debes ordenar por fecha ASC.'};
+      return sqlCheck(result,
+        "SELECT id, monto, fecha FROM ventas WHERE fecha BETWEEN '2024-01-01' AND '2024-03-31' ORDER BY fecha ASC",
+        {ordered: true});
+    }
+  },
+  {
+    id: 'a09', title: 'A-09 · Más que un caso puntual',
+    brief: 'Una subconsulta escalar puede referenciar una fila concreta y usar su valor como umbral.',
+    task: 'Devuelve nombre y salario de los empleados que ganan MÁS que Marta. Ordena por salario DESC. La comparación debe usar una subconsulta que obtenga el salario de Marta.',
+    tables: ['empleados'],
+    solution: "SELECT nombre, salario FROM empleados WHERE salario > (SELECT salario FROM empleados WHERE nombre = 'Marta') ORDER BY salario DESC",
+    hints: [
+      "La subconsulta (SELECT salario FROM empleados WHERE nombre = 'Marta') devuelve un único número. Compáralo con salario > …",
+      "SELECT nombre, salario FROM empleados WHERE salario > (SELECT salario FROM empleados WHERE nombre = 'Marta') ORDER BY salario DESC"
+    ],
+    check(result, ast){
+      if(!JSON.stringify(ast).includes('"subquery"')) return {ok:false, msg:'Debes usar una subconsulta para obtener el salario de Marta.'};
+      if(!ast.orderBy) return {ok:false, msg:'Debes ordenar por salario DESC.'};
+      return sqlCheck(result,
+        "SELECT nombre, salario FROM empleados WHERE salario > (SELECT salario FROM empleados WHERE nombre = 'Marta') ORDER BY salario DESC",
+        {ordered: true});
+    }
+  },
+  {
+    id: 'a10', title: 'A-10 · Resumen por departamento',
+    brief: 'Un doble LEFT JOIN + GROUP BY te permite resumir totales de ventas por departamento incluso si algún departamento no tiene ventas.',
+    task: 'Para cada departamento, devuelve su nombre (alias departamento) y el total vendido por sus empleados (alias total_ventas). Usa LEFT JOIN con empleados y LEFT JOIN con ventas. Departamentos sin ventas deben mostrar 0. Ordena por d.id.',
+    tables: ['departamentos', 'empleados', 'ventas'],
+    solution: 'SELECT d.nombre AS departamento, COALESCE(SUM(v.monto), 0) AS total_ventas FROM departamentos d LEFT JOIN empleados e ON d.id = e.depto_id LEFT JOIN ventas v ON e.id = v.empleado_id GROUP BY d.id, d.nombre ORDER BY d.id',
+    hints: [
+      'Necesitas dos LEFT JOIN encadenados: primero departamentos→empleados, luego empleados→ventas.',
+      'Como puede que un departamento no tenga ventas, envuelve el SUM en COALESCE(SUM(v.monto), 0) para que muestre 0.'
+    ],
+    check(result, ast){
+      if(!ast.joins || ast.joins.length < 2) return {ok:false, msg:'Debes usar DOS LEFT JOIN (departamentos→empleados→ventas).'};
+      if(!ast.groupBy) return {ok:false, msg:'Debes agrupar por el departamento.'};
+      return sqlCheck(result,
+        'SELECT d.nombre AS departamento, COALESCE(SUM(v.monto), 0) AS total_ventas FROM departamentos d LEFT JOIN empleados e ON d.id = e.depto_id LEFT JOIN ventas v ON e.id = v.empleado_id GROUP BY d.id, d.nombre ORDER BY d.id',
+        {ordered: true});
+    }
+  },
+];
+/* ═══════════════════════════════════════════════════════════
+   BLOQUE 5 · UI: RENDERS
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Estado de UI (efímero, no se persiste) ── */
+const uiState = {
+  currentChallengeId: null,
+  currentSQL: '',
+  lastResult: null,
+  showSolution: false,
+  feedback: null
+};
+
+/* ── Búsqueda de retos ── */
+function getCurrentChallenge(){
+  if(!uiState.currentChallengeId) return null;
+  for(const arr of Object.values(CHALLENGES))
+    for(const c of arr) if(c.id === uiState.currentChallengeId) return c;
+  return null;
+}
+function getFirstUnlockedChallenge(){
+  for(const [numStr, lvl] of Object.entries(LEVELS)){
+    if(!isLevelUnlocked(Number(numStr))) continue;
+    const arr = CHALLENGES[lvl.key] || [];
+    for(const c of arr) if(!getState(c.id).solved) return c;
+    if(arr[0]) return arr[0];
+  }
+  return null;
+}
+
+/* ── Orquestador ── */
+function renderApp(){
+  renderSidebar();
+  renderStatus();
+  renderRightPanel();
+  renderChallenge();
+}
+
+/* ── Sidebar ── */
+function renderSidebar(){
+  const nav = $('levelsNav');
+  if(!nav) return;
+  nav.innerHTML = '';
+
+  for(const [numStr, lvl] of Object.entries(LEVELS)){
+    const num = Number(numStr);
+    const challenges = CHALLENGES[lvl.key] || [];
+    const unlocked = isLevelUnlocked(num);
+    const solvedCount = countSolvedInLevel(lvl.key);
+
+    const group = document.createElement('div');
+    group.className = 'level-group';
+
+    const header = document.createElement('div');
+    header.className = 'level-header' + (unlocked ? '' : ' locked');
+    header.innerHTML =
+      '<span>' + (unlocked ? '' : '🔒 ') + num + '. ' + lvl.name + '</span>' +
+      '<span>' + solvedCount + '/' + challenges.length + '</span>';
+    group.appendChild(header);
+
+    const list = document.createElement('ul');
+    list.className = 'challenges';
+
+    for(const c of challenges){
+      const s = getState(c.id);
+      const isActive = c.id === uiState.currentChallengeId;
+      const isLocked = !unlocked;
+
+      const li = document.createElement('li');
+      li.className = [
+        isActive ? 'active' : '',
+        s.solved ? 'completed' : '',
+        isLocked ? 'locked' : ''
+      ].filter(Boolean).join(' ');
+
+      li.innerHTML =
+        '<span><span class="idbadge">' + c.id + '</span>' + escapeHtml(c.title) + '</span>' +
+        (s.solved ? '<span class="chk">✓</span>' : '');
+
+      if(!isLocked){
+        li.addEventListener('click', () => {
+          uiState.currentChallengeId = c.id;
+          uiState.currentSQL = '';
+          uiState.lastResult = null;
+          uiState.showSolution = false;
+          uiState.feedback = null;
+          renderApp();
+        });
+      }
+      list.appendChild(li);
+    }
+
+    group.appendChild(list);
+    nav.appendChild(group);
+  }
+
+  /* En examen: bloquear navegación lateral */
+  if(typeof examState !== 'undefined' && examState.active){
+    const instr = document.querySelector('.instructor-bar');
+    const footer = document.querySelector('.footer-actions');
+    if(instr) instr.style.display = 'none';
+    if(footer) footer.style.display = 'none';
+
+    document.querySelectorAll('.challenges li').forEach(li => {
+      if(!li.classList.contains('active')){
+        li.style.pointerEvents = 'none';
+        li.style.opacity = '0.4';
+      }
+    });
+  }
+}
+
+/* ── Status strip ── */
+function renderStatus(){
+  const { solved, total } = getProgress();
+  const s = uiState.currentChallengeId ? getState(uiState.currentChallengeId) : null;
+
+  updateTimerDisplay();
+  $('stat-attempts').textContent = getTotalAttempts();
+  $('stat-hints').textContent    = getTotalHints();
+  $('stat-points').textContent   = getTotalPoints();
+  $('stat-state').textContent    = s
+    ? (s.solved ? '✓ Resuelto' : (s.attempts > 0 ? 'En curso' : 'Nuevo'))
+    : '—';
+  $('stat-progress').textContent = solved + '/' + total;
+}
+
+/* ── Right panel ── */
+function renderRightPanel(){
+  const c = getCurrentChallenge();
+  const set = (id, val) => { const el = $(id); if(el) el.textContent = val; };
+
+  if(!c){
+    set('rp-attempts', '—'); set('rp-failures', '—'); set('rp-hints', '—');
+    set('rp-best', '—');     set('rp-first', '—');
+    set('rp-schema', 'Selecciona un reto');
+    const hl = $('rp-hints-list');
+    if(hl) hl.innerHTML = '<div class="hint-locked hint-item">Sin pistas usadas</div>';
+    return;
+  }
+
+  const s = getState(c.id);
+  set('rp-attempts', s.attempts);
+  set('rp-failures', s.failures);
+  set('rp-hints',    s.hintsUsed + '/' + (c.hints || []).length);
+  set('rp-best',     formatScore(s.bestScore));
+  set('rp-first',    formatFirstAttempt(s.firstAttempt));
+  set('rp-schema',   schemaTextFor(c.tables));
+
+  const hl = $('rp-hints-list');
+  if(!hl) return;
+  if(s.hintsUsed === 0){
+    hl.innerHTML = '<div class="hint-locked hint-item">Sin pistas usadas</div>';
+  } else {
+    hl.innerHTML = (c.hints || []).slice(0, s.hintsUsed)
+      .map((h, i) => '<div class="hint-item"><b>Pista ' + (i + 1) + ':</b> ' + escapeHtml(h) + '</div>')
+      .join('');
+  }
+}
+
+/* ── Panel central del reto ── */
+function renderChallenge(){
+  const area = $('challengeArea');
+  if(!area) return;
+
+  const c = getCurrentChallenge();
+  if(!c){
+    area.innerHTML =
+      '<div class="welcome">' +
+      '<h1>Bienvenido a SQLLab V1.0</h1>' +
+      '<p>Selecciona un reto en la barra lateral para comenzar.</p>' +
+      '<p style="font-size:12px;color:#888;margin-top:12px">' +
+      'Cada reto ejecuta tu SQL contra una base de datos SQLite en memoria.</p>' +
+      '</div>';
+    return;
+  }
+
+  const s = getState(c.id);
+  const lvl = levelOfChallenge(c);
+  const totalHints = (c.hints || []).length;
+
+  /* ── Estado "iniciado" · en examen siempre se considera iniciado ── */
+  const started = examState.active || uiState.challengeStarted === true;
+
+  let html = '<div class="challenge-panel' + (started ? '' : ' challenge-locked') + '">';
+
+  html += '<h1>' + escapeHtml(c.title) + '</h1>';
+  html += '<div class="challenge-meta">Nivel ' + lvl + ' · ' + c.id + ' · ' +
+          (s.solved ? '✓ resuelto' : 'pendiente') + '</div>';
+
+  /* ── Banner "Iniciar reto" (solo en práctica, no en examen) ── */
+  if(!examState.active && !started){
+    html += '<div class="start-banner">' +
+              '<span>⏱ Cronómetro detenido. Pulsa <b>Iniciar reto</b> cuando estés listo para empezar.</span>' +
+              '<button class="btn-primary" data-action="start-challenge">▶ Iniciar reto</button>' +
+            '</div>';
+  }
+
+  html += '<div class="section-block"><h3>Contexto</h3><p>' + escapeHtml(c.brief) + '</p></div>';
+  html += '<div class="section-block"><h3>Tarea</h3><p>' + escapeHtml(c.task) + '</p></div>';
+
+  html += '<div class="editor-wrap">';
+  html += '<label for="editor">Editor SQL</label>';
+  html += '<textarea id="editor" spellcheck="false" placeholder="-- Escribe tu consulta SQL aquí..."' +
+          (started ? '' : ' disabled') + '>' +
+          escapeHtml(uiState.currentSQL) + '</textarea>';
+  html += '<div class="editor-actions">';
+  html += '<button type="button" class="btn-primary"  data-action="run"' +
+          (started ? '' : ' disabled') + '>▶ Ejecutar</button>';
+  html += '<button type="button" class="btn-warn"     data-action="hint" ' +
+          (s.hintsUsed >= totalHints || !started ? 'disabled' : '') + '>💡 Pista ' +
+          s.hintsUsed + '/' + totalHints + '</button>';
+  html += '<button type="button" class="btn-ghost"    data-action="solution" ' +
+          (s.solutionViewed || !started ? 'disabled' : '') + '>👁 Ver solución</button>';
+  html += '<button type="button" class="btn-secondary" data-action="next">Siguiente →</button>';
+  html += '</div></div>';
+
+  if(uiState.feedback){
+    html += '<div class="feedback show ' + uiState.feedback.type + '">' +
+            escapeHtml(uiState.feedback.message) + '</div>';
+  }
+
+  if(uiState.showSolution){
+    html += '<div class="result-wrap"><h3>Solución de referencia</h3>';
+    html += '<pre style="white-space:pre-wrap;padding:12px;background:#f4f6f5;border-radius:6px;' +
+            'font-family:Consolas,monospace;font-size:12.5px;color:#1c5c39">' +
+            escapeHtml(c.solution) + '</pre>';
+    html += '</div>';
+  }
+
+  const r = uiState.lastResult;
+  if(r){
+    if(r.error){
+      /* el feedback ya cubre el caso de error */
+    } else if(!r.rows || r.rows.length === 0){
+      html += '<div class="result-wrap"><h3>Resultado</h3>';
+      html += '<div class="feedback show info">La consulta no devolvió filas.</div>';
+      html += '</div>';
+    } else if(r.columns && r.columns.length > 0){
+      html += '<div class="result-wrap"><h3>Resultado (' + r.rows.length +
+              ' fila' + (r.rows.length === 1 ? '' : 's') + ')</h3>';
+      html += '<div class="result-table"><table><thead><tr>';
+      for(const col of r.columns) html += '<th>' + escapeHtml(col) + '</th>';
+      html += '</tr></thead><tbody>';
+      for(const row of r.rows){
+        html += '<tr>';
+        for(const col of r.columns){
+          const cell = row[col];
+          const isNull = cell === null || cell === undefined;
+          html += '<td>' + (isNull ? '<span class="null">NULL</span>'
+                                   : escapeHtml(String(cell))) + '</td>';
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table></div></div>';
+    }
+  }
+
+  html += '</div>';
+  area.innerHTML = html;
+
+  /* Listener del editor (preserva texto entre re-renders) */
+  const ed = $('editor');
+  if(ed && started){
+    ed.addEventListener('input', () => { uiState.currentSQL = ed.value; });
+    if(uiState.currentSQL){
+      ed.focus();
+      ed.setSelectionRange(ed.value.length, ed.value.length);
+    }
+  }
+}
+/* ── Modo instructor ── */
+document.addEventListener('change', (e) => {
+  if(e.target && e.target.id === 'instructorMode'){
+    instructorMode = e.target.checked;
+    renderApp();
+  }
+});
+/* ═══════════════════════════════════════════════════════════
+   BLOQUE 6 · ACCIONES (Run / Hint / Solution / Next) + Sidebar
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Estado del examen (mutado en Bloque 7) ── */
+const examState = {
+  active: false,
+  challenges: [],
+  index: 0,
+  results: {},
+  startedAt: null
+};
+
+/* ═══════════════════════════════════════════════════════════
+   Acciones CORE (sin conocimiento del examen)
+   ═══════════════════════════════════════════════════════════ */
+function _actionRunCore(){
+  const c = getCurrentChallenge();
+  if(!c) return;
+  const sql = ($('editor')?.value ?? uiState.currentSQL ?? '').trim();
+  uiState.currentSQL = sql;
+
+  if(!sql){
+    uiState.feedback = { type:'err', message:'Escribe una consulta antes de ejecutar.' };
+    renderApp();
+    return;
+  }
+
+  startTimer();
+  const result = validateQuery(c, sql);
+  uiState.lastResult = result.actual;
+
+  if(result.correct){
+    registerAttempt(c.id, true);
+    uiState.feedback = {
+      type:'ok',
+      message:'¡Correcto! Tu consulta produce el resultado esperado.'
+    };
+  } else {
+    registerAttempt(c.id, false);
+    let msg = result.message;
+    if(result.reason === 'error') msg = 'Error de SQL: ' + msg;
+    uiState.feedback = { type:'err', message: msg };
+  }
+  renderApp();
+}
+
+function _actionHintCore(){
+  const c = getCurrentChallenge();
+  if(!c) return;
+  const s = getState(c.id);
+  if(s.hintsUsed >= (c.hints || []).length) return;
+  registerHint(c.id);
+  renderApp();
+}
+
+function _actionSolutionCore(){
+  const c = getCurrentChallenge();
+  if(!c) return;
+  const s = getState(c.id);
+  if(s.solutionViewed) return;
+  registerSolutionView(c.id);
+  uiState.showSolution = true;
+  uiState.feedback = {
+    type:'info',
+    message:'Has revelado la solución (−10 pts). Intenta entenderla y repetir el reto sin mirarla.'
+  };
+  renderApp();
+}
+
+function _actionNextCore(){
+  const c = getCurrentChallenge();
+  if(!c) return;
+
+  const lvl = levelOfChallenge(c);
+  const arr = CHALLENGES[LEVELS[lvl].key];
+  const idx = arr.findIndex(x => x.id === c.id);
+
+  for(let i = idx + 1; i < arr.length; i++){
+    if(isChallengeUnlocked(arr[i])){ goToChallenge(arr[i].id); return; }
+  }
+  for(let n = lvl + 1; n <= 3; n++){
+    if(isLevelUnlocked(n)){
+      const next = CHALLENGES[LEVELS[n].key];
+      if(next && next.length){ goToChallenge(next[0].id); return; }
+    } else {
+      const req = LEVELS[n].requires;
+      uiState.feedback = {
+        type:'info',
+        message:'Nivel ' + n + ' bloqueado: completa al menos ' + req.minCompleted +
+                ' retos del Nivel ' + req.level + '.'
+      };
+      renderApp();
+      return;
+    }
+  }
+  uiState.feedback = {
+    type:'info',
+    message:'¡Felicidades! No hay más retos desbloqueados. Activa Modo instructor para ver todo.'
+  };
+  renderApp();
+}
+
+function goToChallenge(id){
+  uiState.currentChallengeId = id;
+  uiState.currentSQL = '';
+  uiState.lastResult = null;
+  uiState.showSolution = false;
+  uiState.feedback = null;
+  renderApp();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Dispatchers (exam-aware)
+   ═══════════════════════════════════════════════════════════ */
+function actionRun(){
+  if(examState.active && typeof actionRunExam === 'function') return actionRunExam();
+  return _actionRunCore();
+}
+function actionHint(){
+  if(examState.active) return;
+  return _actionHintCore();
+}
+function actionSolution(){
+  if(examState.active) return;
+  return _actionSolutionCore();
+}
+function actionNext(){
+  if(examState.active && typeof actionNextExam === 'function') return actionNextExam();
+  return _actionNextCore();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Listeners globales
+   ═══════════════════════════════════════════════════════════ */
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-action]');
+  if(!btn || btn.disabled) return;
+  const action = btn.getAttribute('data-action');
+  switch(action){
+    case 'run':      actionRun();      break;
+    case 'hint':     actionHint();     break;
+    case 'solution': actionSolution(); break;
+    case 'next':     actionNext();     break;
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if((e.ctrlKey || e.metaKey) && e.key === 'Enter'){
+    const t = e.target;
+    if(t && t.id === 'editor'){
+      e.preventDefault();
+      actionRun();
+    }
+  }
+});
+
+/* ═══════════════════════════════════════════════════════════
+   Sidebar · Borrar bitácora
+   ═══════════════════════════════════════════════════════════ */
+$('btnClearLog').addEventListener('click', async () => {
+  const ok = await confirmModal({
+    title: '🧹 Borrar bitácora',
+    body:
+      '<p>Se reiniciarán los <b>intentos, fallos y pistas</b> de todos los retos.</p>' +
+      '<p><b>Se conservan</b> las puntuaciones, los retos resueltos y el primer intento.</p>' +
+      '<p>¿Continuar?</p>',
+    confirmText: 'Borrar bitácora'
+  });
+  if(ok !== true) return;
+
+  clearBitacora();
+  uiState.feedback = {
+    type:'info',
+    message:'Bitácora borrada. Contadores a cero; puntuaciones y primer intento conservados.'
+  };
+  renderApp();
+});
+
+/* ═══════════════════════════════════════════════════════════
+   Sidebar · Reiniciar TODO (con contraseña)
+   ═══════════════════════════════════════════════════════════ */
+$('btnResetAll').addEventListener('click', async () => {
+  const v = await passwordModal({
+    title: '⚠️ Reiniciar TODO',
+    body:
+      '<p>Esto <b>borra permanentemente</b>:</p>' +
+      '<ul>' +
+        '<li>Puntuaciones y primer intento de cada reto</li>' +
+        '<li>Retos resueltos y desbloqueo de niveles</li>' +
+        '<li>Intentos, fallos y pistas</li>' +
+      '</ul>' +
+      '<p>Escribe la contraseña para confirmar:</p>',
+    confirmText: 'Reiniciar TODO',
+    password: RESET_PASSWORD
+  });
+  if(typeof v !== 'string') return;
+
+  resetAll();
+  resetTimer();
+
+  uiState.currentChallengeId = null;
+  uiState.currentSQL = '';
+  uiState.lastResult = null;
+  uiState.showSolution = false;
+  uiState.feedback = null;
+
+  const first = getFirstUnlockedChallenge();
+  if(first){
+    uiState.currentChallengeId = first.id;
+    startTimer();
+  }
+  renderApp();
+});
+/* ═══════════════════════════════════════════════════════════
+   BLOQUE 7 · EXAMEN + REPORTES + INIT + CIERRE
+   ═══════════════════════════════════════════════════════════ */
+
+const EXAM_SIZES = [3, 5, 8, 15];
+
+function getUnlockedPool(){
+  const pool = [];
+  for(const [numStr, lvl] of Object.entries(LEVELS)){
+    if(!isLevelUnlocked(Number(numStr))) continue;
+    for(const c of CHALLENGES[lvl.key] || []) pool.push(c);
+  }
+  return pool;
+}
+
+function startExam(n){
+  const pool = getUnlockedPool();
+  if(pool.length < n){
+    openModal({
+      title: '🎯 Examen no disponible',
+      body:
+        '<p>Necesitas al menos <b>' + n + '</b> retos desbloqueados para un examen de ' + n + ' preguntas.</p>' +
+        '<p>Actualmente tienes <b>' + pool.length + '</b> retos accesibles.</p>' +
+        '<p>Completa más retos del Nivel 1 (y del Nivel 2 si aplica) o activa el <b>Modo instructor</b>.</p>',
+      confirmText: 'Entendido'
+    });
+    return;
+  }
+
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  const selected = shuffled.slice(0, n);
+
+  Object.assign(examState, {
+    active: true,
+    challenges: selected,
+    index: 0,
+    results: {},
+    startedAt: Date.now()
+  });
+
+  uiState.currentChallengeId = selected[0].id;
+  uiState.currentSQL = '';
+  uiState.lastResult = null;
+  uiState.showSolution = false;
+  uiState.feedback = {
+    type: 'info',
+    message: 'Examen iniciado: ' + n + ' retos al azar. Sin pistas ni solución. Cada reto 100 pts, −50 por intento fallido.'
+  };
+
+  startTimer();
+  renderApp();
+}
+
+function exitExam(){
+  resetTimer();
+  Object.assign(examState, {
+    active: false,
+    challenges: [],
+    index: 0,
+    results: {},
+    startedAt: null
+  });
+
+  const instr = document.querySelector('.instructor-bar');
+  const footer = document.querySelector('.footer-actions');
+  if(instr) instr.style.display = '';
+  if(footer) footer.style.display = '';
+
+  const first = getFirstUnlockedChallenge();
+  uiState.currentChallengeId = first ? first.id : null;
+  uiState.currentSQL = '';
+  uiState.lastResult = null;
+  uiState.showSolution = false;
+  uiState.feedback = null;
+
+  renderApp();
+}
+
+async function actionExitExam(){
+  const ok = await confirmModal({
+    title: 'Salir del examen',
+    body: '<p>Si sales ahora, <b>perderás el progreso del examen actual</b> (no se guarda). ¿Continuar?</p>',
+    confirmText: 'Salir del examen',
+    danger: true
+  });
+  if(ok !== true) return;
+  exitExam();
+}
+
+function renderExamBanner(){
+  const total = examState.challenges.length;
+  const answered = Object.keys(examState.results).length;
+  const correct = Object.values(examState.results).filter(r => r.correct).length;
+  const totalScore = Object.values(examState.results).reduce((a, r) => a + r.bestScore, 0);
+
+  return '<div class="exam-banner">' +
+    '<div>' +
+      '<b>🎯 Examen</b> · Reto <b>' + (examState.index + 1) + '/' + total + '</b>' +
+      ' · Contestados: <b>' + answered + '/' + total + '</b>' +
+      ' · Aciertos: <b>' + correct + '</b>' +
+      ' · Pts examen: <b>' + totalScore + '</b>' +
+    '</div>' +
+    '<button class="btn-danger" data-action="exit-exam">Salir del examen</button>' +
+  '</div>';
+}
+
+function actionRunExam(){
+  const c = examState.challenges[examState.index];
+  if(!c) return;
+
+  const sql = ($('editor')?.value ?? uiState.currentSQL ?? '').trim();
+  uiState.currentSQL = sql;
+  if(!sql){
+    uiState.feedback = { type: 'err', message: 'Escribe una consulta antes de ejecutar.' };
+    renderApp();
+    return;
+  }
+
+  const result = validateQuery(c, sql);
+  uiState.lastResult = result.actual;
+
+  const rec = examState.results[c.id] || (examState.results[c.id] = { attempts: 0, correct: false, bestScore: 0 });
+  rec.attempts++;
+
+  if(result.correct){
+    const score = Math.max(0, 100 - 50 * (rec.attempts - 1));
+    if(score > rec.bestScore) rec.bestScore = score;
+    rec.correct = true;
+    uiState.feedback = { type: 'ok', message: '¡Correcto! +' + score + ' pts. Pulsa "Siguiente reto".' };
+  } else {
+    let msg = result.message;
+    if(result.reason === 'error') msg = 'Error de SQL: ' + msg;
+    uiState.feedback = { type: 'err', message: msg };
+  }
+  renderApp();
+}
+
+function actionNextExam(){
+  if(examState.index < examState.challenges.length - 1){
+    examState.index++;
+    const c = examState.challenges[examState.index];
+    uiState.currentChallengeId = c.id;
+    uiState.currentSQL = '';
+    uiState.lastResult = null;
+    uiState.showSolution = false;
+    uiState.feedback = null;
+    renderApp();
+  } else {
+    finishExam();
+  }
+}
+
+function finishExam(){
+  const total = examState.challenges.length;
+  const results = examState.results;
+  const answered = Object.keys(results).length;
+  const correct = Object.values(results).filter(r => r.correct).length;
+  const totalScore = Object.values(results).reduce((a, r) => a + r.bestScore, 0);
+  const maxScore = total * 100;
+  const duration = examState.startedAt
+    ? Math.round((Date.now() - examState.startedAt) / 1000)
+    : 0;
+
+  const snapshot = {
+    total, answered, correct, totalScore, maxScore, duration,
+    items: examState.challenges.map(c => ({
+      id: c.id,
+      title: c.title,
+      result: results[c.id] || null
+    }))
+  };
+
+  const examHTML = buildExamReportHTML(snapshot);
+  const filename = 'SQLLab_Examen_' + new Date().toISOString().slice(0, 10) + '.html';
+
+  exitExam();
+
+  const rowsHTML = snapshot.items.map((it, i) => {
+    const r = it.result;
+    const estado = r
+      ? (r.correct ? '✓ Acierto' : '✗ ' + r.attempts + ' intento' + (r.attempts === 1 ? '' : 's'))
+      : '— sin contestar';
+    const pts = r ? r.bestScore : 0;
+    const color = r ? (r.correct ? '#107C41' : '#b03030') : '#888';
+    return '<tr>' +
+      '<td>' + (i + 1) + '</td>' +
+      '<td><code style="font-size:11.5px;color:#107C41">' + it.id + '</code> ' + escapeHtml(it.title) + '</td>' +
+      '<td style="color:' + color + ';font-weight:600">' + estado + '</td>' +
+      '<td style="text-align:right">' + pts + '</td>' +
+    '</tr>';
+  }).join('');
+
+  const pct = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+
+  openModal({
+    title: '🎯 Examen terminado',
+    body:
+      '<p style="margin-bottom:12px">' +
+        'Contestados <b>' + answered + '/' + total + '</b> · ' +
+        'Aciertos <b>' + correct + '</b> · ' +
+        'Puntuación <b>' + totalScore + '/' + maxScore + '</b> (' + pct + '%) · ' +
+        'Duración <b>' + Math.floor(duration / 60) + 'm ' + (duration % 60) + 's</b>' +
+      '</p>' +
+      '<div style="max-height:340px;overflow-y:auto;border:1px solid #e8ecef;border-radius:6px">' +
+        '<table style="width:100%;border-collapse:collapse;font-size:12.5px">' +
+          '<thead><tr style="background:#e8f3ed;color:#1c5c39;position:sticky;top:0">' +
+            '<th style="padding:6px;text-align:left">#</th>' +
+            '<th style="padding:6px;text-align:left">Reto</th>' +
+            '<th style="padding:6px;text-align:left">Estado</th>' +
+            '<th style="padding:6px;text-align:right">Pts</th>' +
+          '</tr></thead>' +
+          '<tbody>' + rowsHTML + '</tbody>' +
+        '</table>' +
+      '</div>',
+    confirmText: '📄 Descargar reporte',
+    cancelText: 'Cerrar'
+  }).then(r => {
+    if(r === true) downloadHTML(filename, examHTML);
+  });
+}
+
+/* ── Wrapper de renderChallenge para modo examen ── */
+const _origRenderChallenge = renderChallenge;
+renderChallenge = function(){
+  _origRenderChallenge();
+  if(!examState.active) return;
+
+  const area = $('challengeArea');
+  if(!area) return;
+
+  const wrap = document.createElement('div');
+  wrap.innerHTML = renderExamBanner();
+  area.prepend(wrap.firstElementChild);
+
+  const meta = area.querySelector('.challenge-meta');
+  if(meta){
+    const c = examState.challenges[examState.index];
+    meta.textContent = '🎯 Examen · Reto ' + (examState.index + 1) + '/' +
+                        examState.challenges.length + ' · ' + c.id;
+  }
+
+  area.querySelector('[data-action="hint"]')?.remove();
+  area.querySelector('[data-action="solution"]')?.remove();
+
+  const nextBtn = area.querySelector('[data-action="next"]');
+  if(nextBtn){
+    nextBtn.textContent = (examState.index === examState.challenges.length - 1)
+      ? 'Terminar examen →'
+      : 'Siguiente reto →';
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════
+   REPORTES HTML
+   ═══════════════════════════════════════════════════════════ */
+function downloadHTML(filename, htmlString){
+  const blob = new Blob([htmlString], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function buildExamReportHTML(snap){
+  const fecha = new Date().toLocaleString('es-ES');
+  const rows = snap.items.map((it, i) => {
+    const r = it.result;
+    const estado = r
+      ? (r.correct ? '✓ Acierto' : '✗ ' + r.attempts + ' intento' + (r.attempts === 1 ? '' : 's'))
+      : 'Sin contestar';
+    const pts = r ? r.bestScore : 0;
+    return '<tr>' +
+      '<td>' + (i + 1) + '</td>' +
+      '<td><code>' + it.id + '</code></td>' +
+      '<td>' + escapeHtml(it.title) + '</td>' +
+      '<td>' + estado + '</td>' +
+      '<td style="text-align:right">' + pts + '</td>' +
+    '</tr>';
+  }).join('');
+
+  const pct = snap.maxScore > 0 ? Math.round((snap.totalScore / snap.maxScore) * 100) : 0;
+  const dur = Math.floor(snap.duration / 60) + 'm ' + (snap.duration % 60) + 's';
+
+  return '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">' +
+    '<title>Reporte de Examen — SQLLab V4.0</title><style>' +
+    'body{font-family:-apple-system,"Segoe UI",sans-serif;max-width:900px;margin:24px auto;padding:0 20px;color:#1a1a1a;font-size:14px}' +
+    'h1{color:#1c5c39;font-size:22px;margin-bottom:4px}' +
+    'h2{color:#424853;font-size:15px;margin-top:28px;border-bottom:2px solid #107C41;padding-bottom:4px}' +
+    '.meta{color:#666;font-size:12px;margin-bottom:16px}' +
+    '.summary{display:flex;gap:16px;flex-wrap:wrap;margin:16px 0}' +
+    '.box{background:#e8f3ed;border-left:4px solid #107C41;padding:10px 16px;border-radius:4px;min-width:110px}' +
+    '.box b{display:block;font-size:20px;color:#107C41}' +
+    '.box span{font-size:11px;text-transform:uppercase;color:#666;letter-spacing:.5px}' +
+    'table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}' +
+    'th{background:#1c5c39;color:#fff;padding:8px;text-align:left;font-size:12px;text-transform:uppercase}' +
+    'td{padding:6px 8px;border-bottom:1px solid #eee}' +
+    'tr:nth-child(even) td{background:#f8fbf9}' +
+    'code{font-family:Consolas,monospace;color:#107C41;font-weight:600}' +
+    '.footer{margin-top:32px;padding-top:12px;border-top:1px solid #ddd;font-size:11px;color:#888;text-align:center}' +
+    '</style></head><body>' +
+    '<h1>Reporte de Examen — SQLLab V4.0</h1>' +
+    '<div class="meta">Generado el ' + fecha + '</div>' +
+    '<div class="summary">' +
+      '<div class="box"><span>Contestados</span><b>' + snap.answered + '/' + snap.total + '</b></div>' +
+      '<div class="box"><span>Aciertos</span><b>' + snap.correct + '</b></div>' +
+      '<div class="box"><span>Puntuación</span><b>' + snap.totalScore + '/' + snap.maxScore + '</b></div>' +
+      '<div class="box"><span>Rendimiento</span><b>' + pct + '%</b></div>' +
+      '<div class="box"><span>Duración</span><b>' + dur + '</b></div>' +
+    '</div>' +
+    '<h2>Desglose por reto</h2>' +
+    '<table><thead><tr><th>#</th><th>ID</th><th>Título</th><th>Estado</th><th style="text-align:right">Puntos</th></tr></thead>' +
+    '<tbody>' + rows + '</tbody></table>' +
+    '<div class="footer">SQLLab V4.0 — Reporte de examen · ' + fecha + '</div>' +
+    '</body></html>';
+}
+
+function buildCourseReportHTML(){
+  const fecha = new Date().toLocaleString('es-ES');
+  const { solved, total } = getProgress();
+  const totalPoints = getTotalPoints();
+  const totalAttempts = getTotalAttempts();
+  const totalHints = getTotalHints();
+  const pct = total > 0 ? Math.round((solved / total) * 100) : 0;
+
+  const levelBlocks = Object.entries(LEVELS).map(([numStr, lvl]) => {
+    const num = Number(numStr);
+    const arr = CHALLENGES[lvl.key] || [];
+    const unlocked = isLevelUnlocked(num);
+    const lvlSolved = countSolvedInLevel(lvl.key);
+    const lvlPoints = arr.reduce((a, c) => a + (getState(c.id).bestScore || 0), 0);
+    const lvlMax = arr.length * 100;
+
+    const rows = arr.map(c => {
+      const s = getState(c.id);
+      const estado = s.solved ? '✓ Resuelto' : (s.attempts > 0 ? 'En curso' : '— Sin empezar');
+      const color = s.solved ? '#107C41' : (s.attempts > 0 ? '#b08612' : '#888');
+      const best = s.bestScore === null ? '—' : s.bestScore;
+      const first = s.firstAttempt ? s.firstAttempt.score + ' pts' : '—';
+      return '<tr>' +
+        '<td><code>' + c.id + '</code></td>' +
+        '<td>' + escapeHtml(c.title) + '</td>' +
+        '<td style="color:' + color + ';font-weight:600">' + estado + '</td>' +
+        '<td style="text-align:right">' + s.attempts + '</td>' +
+        '<td style="text-align:right">' + s.failures + '</td>' +
+        '<td style="text-align:right">' + s.hintsUsed + '</td>' +
+        '<td style="text-align:right">' + best + '</td>' +
+        '<td style="text-align:right">' + first + '</td>' +
+      '</tr>';
+    }).join('');
+
+    return '<h2>Nivel ' + num + ' — ' + lvl.name + (unlocked ? '' : ' 🔒 bloqueado') +
+      ' · ' + lvlSolved + '/' + arr.length + ' resueltos · ' + lvlPoints + '/' + lvlMax + ' pts</h2>' +
+      '<table><thead><tr>' +
+        '<th>ID</th><th>Reto</th><th>Estado</th>' +
+        '<th style="text-align:right">Intentos</th>' +
+        '<th style="text-align:right">Fallos</th>' +
+        '<th style="text-align:right">Pistas</th>' +
+        '<th style="text-align:right">Mejor</th>' +
+        '<th style="text-align:right">1er intento</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>';
+  }).join('');
+
+  return '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">' +
+    '<title>Reporte del Curso — SQLLab V4.0</title><style>' +
+    'body{font-family:-apple-system,"Segoe UI",sans-serif;max-width:1000px;margin:24px auto;padding:0 20px;color:#1a1a1a;font-size:14px}' +
+    'h1{color:#1c5c39;font-size:22px;margin-bottom:4px}' +
+    'h2{color:#424853;font-size:15px;margin-top:28px;border-bottom:2px solid #107C41;padding-bottom:4px}' +
+    '.meta{color:#666;font-size:12px;margin-bottom:16px}' +
+    '.summary{display:flex;gap:16px;flex-wrap:wrap;margin:16px 0}' +
+    '.box{background:#e8f3ed;border-left:4px solid #107C41;padding:10px 16px;border-radius:4px;min-width:110px}' +
+    '.box b{display:block;font-size:20px;color:#107C41}' +
+    '.box span{font-size:11px;text-transform:uppercase;color:#666;letter-spacing:.5px}' +
+    'table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}' +
+    'th{background:#1c5c39;color:#fff;padding:7px;text-align:left;font-size:11px;text-transform:uppercase}' +
+    'td{padding:6px 7px;border-bottom:1px solid #eee}' +
+    'tr:nth-child(even) td{background:#f8fbf9}' +
+    'code{font-family:Consolas,monospace;color:#107C41;font-weight:600}' +
+    '.footer{margin-top:32px;padding-top:12px;border-top:1px solid #ddd;font-size:11px;color:#888;text-align:center}' +
+    '</style></head><body>' +
+    '<h1>Reporte del Curso — SQLLab V4.0</h1>' +
+    '<div class="meta">Generado el ' + fecha + '</div>' +
+    '<div class="summary">' +
+      '<div class="box"><span>Progreso</span><b>' + solved + '/' + total + ' (' + pct + '%)</b></div>' +
+      '<div class="box"><span>Puntos totales</span><b>' + totalPoints + '</b></div>' +
+      '<div class="box"><span>Intentos</span><b>' + totalAttempts + '</b></div>' +
+      '<div class="box"><span>Pistas usadas</span><b>' + totalHints + '</b></div>' +
+    '</div>' +
+    levelBlocks +
+    '<div class="footer">SQLLab V4.0 — Reporte del curso · ' + fecha + '</div>' +
+    '</body></html>';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Cableado de botones del sidebar
+   ═══════════════════════════════════════════════════════════ */
+$('btnExam').addEventListener('click', async () => {
+  const unlockedCount = getUnlockedPool().length;
+  const firstAvailable = EXAM_SIZES.find(n => unlockedCount >= n);
+  const sizesHTML = EXAM_SIZES.map(n => {
+    const ok = unlockedCount >= n;
+    const checked = (n === firstAvailable) ? 'checked' : '';
+    return '<label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid #ddd;border-radius:6px;cursor:' + (ok ? 'pointer' : 'not-allowed') + ';' + (ok ? '' : 'opacity:.55') + '">' +
+      '<input type="radio" name="exam-size" value="' + n + '" ' + (ok ? '' : 'disabled') + ' ' + checked + '>' +
+      '<span><b>' + n + '</b> reto' + (n === 1 ? '' : 's') + (ok ? '' : ' — no hay suficientes desbloqueados') + '</span>' +
+    '</label>';
+  }).join('');
+
+  const r = await openModal({
+    title: '🎯 Configurar examen',
+    body:
+      '<p>Se eligen retos <b>al azar</b> entre los <b>' + unlockedCount + '</b> retos desbloqueados.</p>' +
+      '<div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">' + sizesHTML + '</div>' +
+      '<p style="margin-top:14px;font-size:12px;color:#666">En modo examen no hay pistas ni ver solución. Cada reto vale 100 pts, −50 por intento fallido.</p>',
+    confirmText: 'Comenzar examen'
+  });
+  if(r !== true) return;
+
+  const sel = document.querySelector('input[name="exam-size"]:checked');
+  if(!sel) return;
+  startExam(parseInt(sel.value, 10));
+});
+
+$('btnReport').addEventListener('click', async () => {
+  const { solved, total } = getProgress();
+  const ok = await confirmModal({
+    title: '📄 Reporte del curso',
+    body:
+      '<p>Se generará un archivo <b>HTML descargable</b> con el desglose completo:</p>' +
+      '<ul>' +
+        '<li>Resumen global: progreso, puntos, intentos, pistas</li>' +
+        '<li>Tabla por nivel con estado, intentos, fallos, pistas, mejor puntuación y 1er intento de cada reto</li>' +
+        '<li>Totales por nivel y global</li>' +
+      '</ul>' +
+      '<p style="margin-top:10px">Estado actual: <b>' + solved + '/' + total + '</b> retos resueltos · <b>' + getTotalPoints() + '</b> pts.</p>',
+    confirmText: '📄 Descargar reporte'
+  });
+  if(ok !== true) return;
+
+  const html = buildCourseReportHTML();
+  const filename = 'SQLLab_Curso_' + new Date().toISOString().slice(0, 10) + '.html';
+  downloadHTML(filename, html);
+
+  uiState.feedback = { type: 'info', message: 'Reporte descargado: ' + filename };
+  renderApp();
+});
+
+/* ── Banner: salir del examen ── */
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-action="exit-exam"]');
+  if(!btn) return;
+  actionExitExam();
+});
+
+/* ═══════════════════════════════════════════════════════════
+   Self‑tests (consola del navegador)
+   ═══════════════════════════════════════════════════════════ */
+function selfTestSQL(){
+  const tests = [
+    { name: 'SELECT *', sql: 'SELECT * FROM empleados' },
+    { name: 'WHERE',    sql: "SELECT nombre FROM empleados WHERE depto_id = 1" },
+    { name: 'Agregado', sql: 'SELECT COUNT(*) FROM empleados' },
+    { name: 'Error',    sql: 'SELEC * FROM empleados' }
+  ];
+  console.group('%c🧪 selfTestSQL()', 'color:#107C41;font-weight:bold');
+  for(const t of tests){
+    const r = runUserSQL(t.sql);
+    if(r.error) console.warn('❌ ' + t.name + ' → ' + r.error);
+    else console.log('✅ ' + t.name + ' →', r.columns, r.rows);
+  }
+  console.groupEnd();
+  return '✅ selfTestSQL OK';
+}
+
+function selfTestValidate(){
+  const b1 = CHALLENGES.basico.find(c => c.id === 'b01');
+  const b4 = CHALLENGES.basico.find(c => c.id === 'b04');
+  const tests = [
+    { name: 'b01 correcta',  ch: b1, sql: 'SELECT nombre, salario FROM empleados', want: true },
+    { name: 'b01 invertida', ch: b1, sql: 'SELECT salario, nombre FROM empleados', want: false },
+    { name: 'b04 sin ORDEN', ch: b4, sql: 'SELECT nombre, salario FROM empleados', want: false },
+    { name: 'b04 con ORDEN', ch: b4, sql: 'SELECT nombre, salario FROM empleados ORDER BY salario ASC', want: true }
+  ];
+  console.group('%c🧪 selfTestValidate()', 'color:#107C41;font-weight:bold');
+  let pass = 0, fail = 0;
+  for(const t of tests){
+    const r = validateQuery(t.ch, t.sql);
+    const ok = (r.correct === t.want);
+    if(ok){ console.log('✅ ' + t.name + ' → correct=' + r.correct); pass++; }
+    else  { console.warn('❌ ' + t.name + ' → correct=' + r.correct + ' (esperado ' + t.want + ') — ' + r.message); fail++; }
+  }
+  console.groupEnd();
+  console.log('Resultado: ' + pass + ' OK, ' + fail + ' KO');
+  return pass + '/' + tests.length + ' OK';
+}
+
+/* ═INIT═ */
+initState();
+
+const first = getFirstUnlockedChallenge();
+if(first) uiState.currentChallengeId = first.id;
+renderApp();
+// (el timer lo arranca el alumno con ▶ Iniciar reto)
+
+console.log('%c✅ SQLLab V4.0 — listo', 'color:#107C41;font-weight:bold;font-size:14px');
+console.log('%cPruebas de consola: selfTestSQL() · selfTestValidate()', 'color:#6d89af');
+/*  · Lógica del botón "Iniciar reto"══ */
+
+(function installStartChallenge(){
+  /* 1. Estilos del banner (una sola vez) */
+  if(!document.getElementById('start-challenge-styles')){
+    const s = document.createElement('style');
+    s.id = 'start-challenge-styles';
+    s.textContent = `
+      .start-banner{
+        background:#e8f3ed;border:1px solid #107C41;padding:10px 14px;
+        border-radius:6px;margin-bottom:12px;font-size:13px;color:#1c5c39;
+        display:flex;justify-content:space-between;align-items:center;
+        gap:12px;flex-wrap:wrap;
+      }
+      .start-banner b{color:#107C41}
+      .start-banner button{font-size:13px;padding:7px 18px;font-weight:700}
+      .challenge-panel.challenge-locked #editor{
+        background:#f4f6f5;color:#94a3b8;cursor:not-allowed;
+      }
+    `;
+    document.head.appendChild(s);
+  }
+
+  /* 2. Guardia sobre startTimer */
+  const _origStartTimer = startTimer;
+  startTimer = function(){
+    if(!examState.active && !uiState.challengeStarted) return;
+    _origStartTimer();
+  };
+
+  /* 3. Al salir del examen, el siguiente reto vuelve a estar "sin iniciar" */
+  const _prevExitExam_sc = exitExam;
+  exitExam = function(){
+    uiState.challengeStarted = false;
+    resetTimer();
+    _prevExitExam_sc();
+  };
+
+  /* 4. Detección de cambio de reto:
+        el render lo hace el Bloque 5, aquí solo reseteamos timer + estado. */
+  const _prevRenderChallenge_sc = renderChallenge;
+  let _lastChallengeId = '__init__';
+
+  renderChallenge = function(){
+    if(_lastChallengeId !== uiState.currentChallengeId){
+      uiState.challengeStarted = false;
+      resetTimer();
+      _lastChallengeId = uiState.currentChallengeId;
+    }
+    _prevRenderChallenge_sc();
+  };
+
+  /* 5. Handler del botón */
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="start-challenge"]');
+    if(!btn) return;
+    uiState.challengeStarted = true;
+    resetTimer();
+    startTimer();
+    renderApp();
+  });
+
+  /* 6. FIX: forzar re-render inicial para que el Bloque 5 pinte el banner
+        desde el primer instante (el render del Bloque 7 usó la versión sin wrapper). */
+  if(timerRunning) resetTimer();
+  renderApp();
+})();
+/* ═══════════════════════════════════════════════════════════
+   · REFERENCIA SQL — infraestructura + contenido
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── 1. Estilos de la vista de referencia (inyectados) ── */
+(function ensureReferenceStyles(){
+  if(document.getElementById('ref-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'ref-styles';
+  style.textContent = `
+    .reference-panel{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:24px 28px;max-width:960px}
+    .reference-panel h1{color:#1c5c39;font-size:24px;margin-bottom:6px}
+    .reference-panel .ref-intro{color:#555;margin-bottom:20px;line-height:1.6;font-size:13.5px}
+    .reference-panel .ref-back{margin-bottom:14px}
+    .ref-section{margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid #eef1f4}
+    .ref-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+    .ref-section h2{color:#1c5c39;font-size:17px;margin-bottom:10px;font-weight:700}
+    .ref-section p{color:#333;line-height:1.65;font-size:13.5px;margin-bottom:8px}
+    .ref-section code{font-family:'Consolas',monospace;background:#f0f4f2;color:#107C41;padding:1px 5px;border-radius:3px;font-size:12.5px;font-weight:600}
+    .ref-item{margin:12px 0;padding-left:12px;border-left:3px solid #e8f3ed}
+    .ref-item h3{color:#424853;font-size:13.5px;margin-bottom:6px;font-weight:700}
+    .ref-code{background:#1c5c39;color:#e8f3ed;padding:10px 14px;border-radius:6px;font-family:'Consolas',monospace;font-size:12.5px;line-height:1.6;margin:8px 0;overflow-x:auto;white-space:pre}
+    .ref-clauses{width:100%;border-collapse:collapse;font-size:12.5px;margin:10px 0}
+    .ref-clauses th{background:#e8f3ed;color:#1c5c39;text-align:left;padding:7px 10px;border-bottom:2px solid #107C41;font-weight:700}
+    .ref-clauses td{padding:6px 10px;border-bottom:1px solid #eee}
+    .ref-clauses tr:last-child td{border-bottom:none}
+    .ref-tip{background:#fff8e1;border-left:3px solid #d4a017;padding:8px 12px;border-radius:4px;color:#5a4a10;font-size:12.5px;margin:10px 0;line-height:1.5}
+    .ref-list{margin:8px 0 8px 20px;line-height:1.8;font-size:13px;color:#333}
+    .ref-list li{margin-bottom:4px}
+  `;
+  document.head.appendChild(style);
+})();
+
+/* ── 2. Estado de la vista ── */
+if(uiState.view === undefined) uiState.view = 'challenge';
+
+/* ── 3. Contenido por partes (R2 añadirá más) ── */
+const REF_PARTS = [];
+
+function buildReferenceHTML(){
+  return '<div class="reference-panel">' +
+    '<button class="btn-ghost ref-back" id="btnBackToChallenge">← Volver al reto</button>' +
+    '<h1>📖 Referencia SQL</h1>' +
+    '<p class="ref-intro">Guía rápida de los comandos que usarás en los retos. ' +
+    'Cada ejemplo se puede ejecutar contra la base de datos del laboratorio. ' +
+    'También puedes consultar las pistas de cada reto o pedir la solución si te bloqueas.</p>' +
+    REF_PARTS.join('') +
+    '</div>';
+}
+
+/* ── 4. Render de la vista ── */
+function renderReference(){
+  const area = $('challengeArea');
+  if(!area) return;
+  area.innerHTML = buildReferenceHTML();
+}
+
+/* ── 5. Wrapper de renderChallenge (conmuta entre reto y referencia) ── */
+const _prevRenderChallenge_ref = renderChallenge;
+renderChallenge = function(){
+  if(examState.active) uiState.view = 'challenge';  // durante examen, siempre reto
+  if(uiState.view === 'reference'){
+    renderReference();
+    return;
+  }
+  _prevRenderChallenge_ref();
+};
+
+/* ── 6. Wrapper de exitExam (fuerza vuelta a vista reto) ── */
+if(typeof exitExam === 'function'){
+  const _prevExitExam_ref = exitExam;
+  exitExam = function(){
+    uiState.view = 'challenge';
+    _prevExitExam_ref();
+  };
+}
+
+/* ── 7. Captura de clics en retos (reset view) ── */
+document.addEventListener('click', (e) => {
+  const li = e.target.closest('.challenges li');
+  if(li && !li.classList.contains('locked')){
+    uiState.view = 'challenge';
+  }
+}, true);
+
+/* ── 8. Delegación para botón "Volver al reto" y para el botón de referencia ── */
+document.addEventListener('click', (e) => {
+  if(e.target && e.target.id === 'btnBackToChallenge'){
+    uiState.view = 'challenge';
+    renderApp();
+  }
+});
+
+/* ── 9. Botón "📖 Referencia SQL" en el sidebar ── */
+(function ensureReferenceButton(){
+  const footer = document.querySelector('.footer-actions');
+  if(!footer || document.getElementById('btnReference')) return;
+
+  const btn = document.createElement('button');
+  btn.id = 'btnReference';
+  btn.className = 'btn-ghost';
+  btn.textContent = '📖 Referencia SQL';
+
+  const reportBtn = footer.querySelector('#btnReport');
+  if(reportBtn) reportBtn.after(btn);
+  else footer.prepend(btn);
+
+  btn.addEventListener('click', () => {
+    if(examState.active){
+      openModal({
+        title: '📖 Referencia no disponible',
+        body: '<p>No puedes abrir la referencia durante un examen. ' +
+              'Termina o sal del examen actual primero.</p>',
+        confirmText: 'Entendido'
+      });
+      return;
+    }
+    uiState.view = 'reference';
+    renderApp();
+  });
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   Contenido ·
+   (intro · anatomía · SELECT/FROM · WHERE · ORDER BY)
+   ═══════════════════════════════════════════════════════════ */
+REF_PARTS.push(`
+<div class="ref-section">
+<h2>🎯 ¿Qué es SQL?</h2>
+<p>SQL (Structured Query Language) es el lenguaje estándar para <b>consultar y manipular</b> bases de datos relacionales. Una base de datos es un conjunto de <b>tablas</b>; cada tabla tiene <b>filas</b> (registros) y <b>columnas</b> (campos).</p>
+<p>En este laboratorio la base tiene 3 tablas:</p>
+<ul class="ref-list">
+  <li><code>empleados</code> (id, nombre, apellido, depto_id, salario, fecha_ingreso)</li>
+  <li><code>departamentos</code> (id, nombre)</li>
+  <li><code>ventas</code> (id, empleado_id, monto, fecha)</li>
+</ul>
+</div>
+
+<div class="ref-section">
+<h2>📋 Anatomía de un SELECT</h2>
+<pre class="ref-code">SELECT nombre, salario
+FROM   empleados
+WHERE  salario &gt; 3000
+ORDER BY salario DESC
+LIMIT 5;</pre>
+<table class="ref-clauses">
+<thead><tr><th>Cláusula</th><th>Función</th><th>Orden</th></tr></thead>
+<tbody>
+<tr><td><code>SELECT</code></td><td>Qué columnas devolver</td><td>1º</td></tr>
+<tr><td><code>FROM</code></td><td>De qué tabla(s)</td><td>2º</td></tr>
+<tr><td><code>WHERE</code></td><td>Filtra filas individuales</td><td>3º</td></tr>
+<tr><td><code>GROUP BY</code></td><td>Agrupa filas para agregados</td><td>4º</td></tr>
+<tr><td><code>HAVING</code></td><td>Filtra grupos (después de agrupar)</td><td>5º</td></tr>
+<tr><td><code>ORDER BY</code></td><td>Ordena el resultado</td><td>6º</td></tr>
+<tr><td><code>LIMIT</code></td><td>Limita cuántas filas devolver</td><td>7º</td></tr>
+</tbody>
+</table>
+<div class="ref-tip">💡 El orden es <b>obligatorio</b>. No puedes poner ORDER BY antes de WHERE.</div>
+</div>
+
+<div class="ref-section">
+<h2>📌 SELECT y FROM</h2>
+
+<div class="ref-item">
+<h3>Columnas específicas</h3>
+<pre class="ref-code">SELECT nombre, salario FROM empleados;</pre>
+</div>
+
+<div class="ref-item">
+<h3>Todas las columnas con *</h3>
+<pre class="ref-code">SELECT * FROM empleados;</pre>
+<p>Útil para explorar, pero en producción conviene listar solo las que necesitas.</p>
+</div>
+
+<div class="ref-item">
+<h3>Alias con AS</h3>
+<pre class="ref-code">SELECT nombre AS empleado, salario * 12 AS salario_anual FROM empleados;</pre>
+<p>Renombra la columna en el resultado. También acepta expresiones.</p>
+</div>
+
+<div class="ref-item">
+<h3>DISTINCT — sin duplicados</h3>
+<pre class="ref-code">SELECT DISTINCT depto_id FROM empleados;</pre>
+</div>
+</div>
+
+<div class="ref-section">
+<h2>🔍 WHERE — filtrar filas</h2>
+<p>La condición se evalúa <b>fila por fila</b>. Las que devuelvan TRUE se quedan en el resultado.</p>
+
+<div class="ref-item">
+<h3>Comparación</h3>
+<pre class="ref-code">SELECT * FROM empleados WHERE salario &gt; 3000;
+SELECT * FROM empleados WHERE depto_id = 2;
+SELECT * FROM empleados WHERE nombre &lt;&gt; 'Ana';  -- distinto</pre>
+<table class="ref-clauses">
+<thead><tr><th>Operador</th><th>Significado</th></tr></thead>
+<tbody>
+<tr><td><code>=</code></td><td>Igual</td></tr>
+<tr><td><code>&lt;&gt;</code> o <code>!=</code></td><td>Distinto</td></tr>
+<tr><td><code>&gt;</code> / <code>&lt;</code></td><td>Mayor / menor</td></tr>
+<tr><td><code>&gt;=</code> / <code>&lt;=</code></td><td>Mayor o igual / menor o igual</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="ref-item">
+<h3>AND / OR / NOT</h3>
+<pre class="ref-code">SELECT * FROM empleados WHERE salario &gt; 3000 AND depto_id = 2;
+SELECT * FROM empleados WHERE depto_id = 1 OR depto_id = 2;
+SELECT * FROM empleados WHERE NOT depto_id = 1;</pre>
+<p>AND = ambas condiciones · OR = al menos una · NOT = negación. Puedes usar paréntesis.</p>
+</div>
+
+<div class="ref-item">
+<h3>LIKE — buscar por patrón</h3>
+<pre class="ref-code">WHERE nombre LIKE 'A%'        -- empieza con A
+WHERE nombre LIKE '%a'        -- termina con a
+WHERE nombre LIKE '%ar%'      -- contiene "ar"
+WHERE nombre LIKE 'A_a'       -- A + cualquier carácter + a</pre>
+<p><code>%</code> = cualquier cantidad de caracteres · <code>_</code> = exactamente un carácter.</p>
+</div>
+
+<div class="ref-item">
+<h3>IN — lista de valores</h3>
+<pre class="ref-code">WHERE depto_id IN (1, 2, 3)
+WHERE nombre IN ('Ana', 'Luis', 'Marta')</pre>
+<p>Equivale a varios OR encadenados.</p>
+</div>
+
+<div class="ref-item">
+<h3>BETWEEN — rango inclusivo</h3>
+<pre class="ref-code">WHERE salario BETWEEN 2000 AND 4000</pre>
+<p>Incluye ambos extremos. Equivale a <code>salario &gt;= 2000 AND salario &lt;= 4000</code>.</p>
+</div>
+
+<div class="ref-item">
+<h3>IS NULL / IS NOT NULL</h3>
+<pre class="ref-code">WHERE depto_id IS NULL       -- empleados sin depto
+WHERE depto_id IS NOT NULL   -- con depto asignado</pre>
+<p>No uses <code>= NULL</code>: nunca devuelve filas. Siempre <code>IS NULL</code>.</p>
+</div>
+</div>
+
+<div class="ref-section">
+<h2>🔢 ORDER BY y LIMIT</h2>
+
+<div class="ref-item">
+<h3>Orden ascendente / descendente</h3>
+<pre class="ref-code">SELECT nombre, salario FROM empleados ORDER BY salario ASC;   -- menor a mayor
+SELECT nombre, salario FROM empleados ORDER BY salario DESC;  -- mayor a menor</pre>
+<p>Sin ASC ni DESC, el defecto es ASC.</p>
+</div>
+
+<div class="ref-item">
+<h3>Múltiples columnas</h3>
+<pre class="ref-code">ORDER BY depto_id ASC, salario DESC</pre>
+<p>Primero agrupa por depto_id; dentro de cada depto ordena por salario descendente.</p>
+</div>
+
+<div class="ref-item">
+<h3>LIMIT</h3>
+<pre class="ref-code">SELECT nombre, salario FROM empleados ORDER BY salario DESC LIMIT 3;</pre>
+<p>Devuelve solo las 3 primeras filas. Combinado con ORDER BY = "top N".</p>
+</div>
+</div>
+`);
+
+REF_PARTS.push(`
+<div class="ref-section">
+<h2>📊 Funciones de agregado</h2>
+<p>Devuelven <b>un solo valor</b> a partir de muchas filas. Son la base de cualquier análisis.</p>
+
+<div class="ref-item">
+<h3>Las 5 funciones principales</h3>
+<table class="ref-clauses">
+<thead><tr><th>Función</th><th>Qué hace</th><th>Ejemplo</th></tr></thead>
+<tbody>
+<tr><td><code>COUNT(*)</code></td><td>Cuenta filas (incluye NULLs)</td><td><code>SELECT COUNT(*) FROM empleados;</code></td></tr>
+<tr><td><code>COUNT(col)</code></td><td>Cuenta filas <b>no nulas</b> de col</td><td><code>SELECT COUNT(depto_id) FROM empleados;</code></td></tr>
+<tr><td><code>SUM(col)</code></td><td>Suma los valores</td><td><code>SELECT SUM(salario) FROM empleados;</code></td></tr>
+<tr><td><code>AVG(col)</code></td><td>Promedio (ignora NULLs)</td><td><code>SELECT AVG(salario) FROM empleados;</code></td></tr>
+<tr><td><code>MIN(col)</code></td><td>Valor mínimo</td><td><code>SELECT MIN(salario) FROM empleados;</code></td></tr>
+<tr><td><code>MAX(col)</code></td><td>Valor máximo</td><td><code>SELECT MAX(salario) FROM empleados;</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="ref-item">
+<h3>Varios agregados en una sola fila</h3>
+<pre class="ref-code">SELECT COUNT(*) AS total,
+       AVG(salario) AS promedio,
+       MAX(salario) AS maximo,
+       MIN(salario) AS minimo
+FROM empleados;</pre>
+<p>Devuelve <b>una única fila</b> con los 4 valores.</p>
+</div>
+
+<div class="ref-item">
+<h3>COUNT(*) vs COUNT(col) — cuidado con los NULL</h3>
+<pre class="ref-code">-- empleados: 8 filas, 1 con depto_id = NULL
+SELECT COUNT(*)       FROM empleados;  -- 8  (cuenta todas las filas)
+SELECT COUNT(depto_id) FROM empleados; -- 7  (ignora la fila con NULL)</pre>
+<div class="ref-tip">💡 Regla de oro: <b>COUNT(*)</b> = filas · <b>COUNT(col)</b> = filas donde col NO es NULL.</div>
+</div>
+
+<div class="ref-item">
+<h3>Agregados con WHERE</h3>
+<pre class="ref-code">SELECT COUNT(*) AS empleados_ti, AVG(salario) AS promedio_ti
+FROM empleados
+WHERE depto_id = 2;</pre>
+<p>El WHERE filtra filas <b>antes</b> de calcular el agregado.</p>
+</div>
+</div>
+
+<div class="ref-section">
+<h2>📦 GROUP BY y HAVING</h2>
+<p><b>GROUP BY</b> divide las filas en grupos que comparten un valor. Aplica el agregado <b>por grupo</b>, devolviendo una fila por grupo.</p>
+
+<div class="ref-item">
+<h3>Sintaxis</h3>
+<pre class="ref-code">SELECT depto_id, COUNT(*) AS empleados, AVG(salario) AS prom
+FROM empleados
+GROUP BY depto_id;</pre>
+<p>Devuelve <b>una fila por departamento</b>.</p>
+</div>
+
+<div class="ref-item">
+<h3>Regla de oro</h3>
+<p>Toda columna del SELECT que <b>no</b> esté dentro de un agregado debe aparecer en el GROUP BY:</p>
+<pre class="ref-code">-- ✔ válido
+SELECT depto_id, COUNT(*) FROM empleados GROUP BY depto_id;
+
+-- ✘ inválido: nombre no está en el GROUP BY ni en un agregado
+SELECT nombre, COUNT(*) FROM empleados GROUP BY depto_id;</pre>
+</div>
+
+<div class="ref-item">
+<h3>HAVING — filtrar grupos</h3>
+<pre class="ref-code">SELECT depto_id, COUNT(*) AS empleados
+FROM empleados
+GROUP BY depto_id
+HAVING COUNT(*) &gt;= 3;</pre>
+<p><b>HAVING</b> filtra grupos ya formados. <b>WHERE</b> filtra filas antes de agrupar.</p>
+</div>
+
+<div class="ref-item">
+<h3>WHERE y HAVING juntos</h3>
+<pre class="ref-code">SELECT depto_id, AVG(salario) AS prom
+FROM empleados
+WHERE salario &gt; 2000        -- primero filtra filas
+GROUP BY depto_id
+HAVING AVG(salario) &gt; 3000; -- luego filtra grupos</pre>
+</div>
+
+<div class="ref-item">
+<h3>HAVING con alias (truco)</h3>
+<pre class="ref-code">SELECT depto_id, SUM(salario) AS total
+FROM empleados
+GROUP BY depto_id
+HAVING total &gt; 10000;   -- funciona en SQLite / MySQL</pre>
+<div class="ref-tip">💡 SQL estándar exige repetir el agregado en HAVING. <code>HAVING SUM(salario) &gt; 10000</code> es más portable.</div>
+</div>
+</div>
+
+<div class="ref-section">
+<h2>🔗 JOINs — combinar tablas</h2>
+<p>Un <b>JOIN</b> une filas de dos tablas cuando una condición se cumple. Normalmente esa condición es una <b>clave foránea</b> (ej. <code>empleados.depto_id = departamentos.id</code>).</p>
+
+<div class="ref-item">
+<h3>INNER JOIN — solo coincidencias</h3>
+<pre class="ref-code">SELECT e.nombre AS empleado, d.nombre AS depto
+FROM empleados e
+INNER JOIN departamentos d ON e.depto_id = d.id;</pre>
+<p>Si un empleado tiene <code>depto_id = NULL</code>, ese empleado <b>no aparece</b>.</p>
+</div>
+
+<div class="ref-item">
+<h3>LEFT JOIN — todas las filas de la izquierda</h3>
+<pre class="ref-code">SELECT e.nombre AS empleado, d.nombre AS depto
+FROM empleados e
+LEFT JOIN departamentos d ON e.depto_id = d.id;</pre>
+<p>Los empleados con <code>depto_id = NULL</code> <b>sí aparecen</b>; la columna <code>depto</code> sale como NULL.</p>
+<div class="ref-tip">💡 <b>LEFT JOIN + IS NULL</b> es la forma clásica de encontrar "los que NO tienen par": <code>WHERE d.id IS NULL</code>.</div>
+</div>
+
+<div class="ref-item">
+<h3>Alias de tabla — imprescindibles en JOINs</h3>
+<pre class="ref-code">FROM empleados e
+JOIN departamentos d ON e.depto_id = d.id</pre>
+<p>Cuando dos tablas tienen una columna con el mismo nombre (por ejemplo <code>nombre</code>), usa el alias: <code>e.nombre</code> vs <code>d.nombre</code>.</p>
+</div>
+
+<div class="ref-item">
+<h3>Más de 2 tablas</h3>
+<pre class="ref-code">SELECT d.nombre, e.nombre AS empleado, SUM(v.monto) AS total
+FROM departamentos d
+JOIN empleados e ON d.id = e.depto_id
+JOIN ventas    v ON e.id = v.empleado_id
+GROUP BY d.id, d.nombre, e.id, e.nombre;</pre>
+<p>Encadena tantos JOINs como necesites. Cada uno añade una tabla con su ON.</p>
+</div>
+
+<div class="ref-item">
+<h3>Doble LEFT JOIN + COALESCE</h3>
+<pre class="ref-code">SELECT d.nombre AS depto,
+       COALESCE(SUM(v.monto), 0) AS total_ventas
+FROM departamentos d
+LEFT JOIN empleados e ON d.id = e.depto_id
+LEFT JOIN ventas    v ON e.id = v.empleado_id
+GROUP BY d.id, d.nombre;</pre>
+<p>Los departamentos sin ventas aparecen con <b>0</b> en lugar de NULL.</p>
+</div>
+</div>
+
+<div class="ref-section">
+<h2>🔤 Funciones escalares (texto y números)</h2>
+<p>Se aplican <b>fila por fila</b> y devuelven un valor por cada fila.</p>
+
+<div class="ref-item">
+<h3>Texto</h3>
+<table class="ref-clauses">
+<thead><tr><th>Función</th><th>Qué hace</th><th>Ejemplo</th></tr></thead>
+<tbody>
+<tr><td><code>UPPER(s)</code></td><td>Mayúsculas</td><td><code>UPPER(nombre)</code></td></tr>
+<tr><td><code>LOWER(s)</code></td><td>Minúsculas</td><td><code>LOWER(nombre)</code></td></tr>
+<tr><td><code>LENGTH(s)</code></td><td>Largo en caracteres</td><td><code>LENGTH(nombre)</code></td></tr>
+<tr><td><code>CONCAT(a,b,…)</code></td><td>Une textos</td><td><code>CONCAT(nombre,' ',apellido)</code></td></tr>
+<tr><td><code>SUBSTR(s,p,n)</code></td><td>Subcadena desde p, n caracteres</td><td><code>SUBSTR(nombre,1,3)</code></td></tr>
+<tr><td><code>TRIM(s)</code></td><td>Quita espacios extremos</td><td><code>TRIM(nombre)</code></td></tr>
+</tbody>
+</table>
+<pre class="ref-code">SELECT UPPER(nombre) AS nombre_mayus,
+       CONCAT(nombre, ' ', apellido) AS nombre_completo
+FROM empleados;</pre>
+</div>
+
+<div class="ref-item">
+<h3>Número</h3>
+<table class="ref-clauses">
+<thead><tr><th>Función</th><th>Qué hace</th><th>Ejemplo</th></tr></thead>
+<tbody>
+<tr><td><code>ROUND(v,n)</code></td><td>Redondea a n decimales</td><td><code>ROUND(salario/12, 2)</code></td></tr>
+<tr><td><code>ABS(v)</code></td><td>Valor absoluto</td><td><code>ABS(a - b)</code></td></tr>
+<tr><td><code>COALESCE(a,b,…)</code></td><td>Primer valor NO NULL</td><td><code>COALESCE(depto_id, 0)</code></td></tr>
+</tbody>
+</table>
+<pre class="ref-code">SELECT nombre,
+       ROUND(salario / 22, 2) AS salario_por_dia
+FROM empleados;</pre>
+</div>
+</div>
+
+<div class="ref-section">
+<h2>🎨 CASE WHEN — condicional por fila</h2>
+<p>Es el <b>if/else de SQL</b>. Devuelve un valor por cada fila según una condición.</p>
+
+<div class="ref-item">
+<h3>Sintaxis</h3>
+<pre class="ref-code">CASE
+  WHEN cond1 THEN valor1
+  WHEN cond2 THEN valor2
+  ELSE valor_default
+END</pre>
+<p>Los WHEN se evalúan <b>en orden</b>: el primero que se cumple gana. Puedes omitir ELSE; en ese caso el resultado es NULL si nada coincide.</p>
+</div>
+
+<div class="ref-item">
+<h3>Clasificación simple</h3>
+<pre class="ref-code">SELECT nombre, salario,
+  CASE
+    WHEN salario &gt;= 4000 THEN 'Alto'
+    WHEN salario &gt;= 2500 THEN 'Medio'
+    ELSE 'Bajo'
+  END AS categoria
+FROM empleados;</pre>
+</div>
+
+<div class="ref-item">
+<h3>Pivot con SUM(CASE WHEN …)</h3>
+<pre class="ref-code">SELECT
+  SUM(CASE WHEN depto_id = 1 THEN 1 ELSE 0 END) AS ventas_depto,
+  SUM(CASE WHEN depto_id = 2 THEN 1 ELSE 0 END) AS ti_depto
+FROM empleados;</pre>
+<p>Truco clásico: "cuenta condicional". Combinado con GROUP BY, obtienes una tabla pivot.</p>
+</div>
+</div>
+
+<div class="ref-section">
+<h2>🔍 Subconsultas</h2>
+<p>Un <b>SELECT</b> dentro de otro SELECT. Siempre van entre paréntesis.</p>
+
+<div class="ref-item">
+<h3>Subconsulta escalar — devuelve UN valor</h3>
+<pre class="ref-code">SELECT nombre, salario
+FROM empleados
+WHERE salario &gt; (SELECT AVG(salario) FROM empleados);</pre>
+<p>La subconsulta se evalúa primero; su resultado es el umbral del WHERE.</p>
+</div>
+
+<div class="ref-item">
+<h3>Subconsulta con IN — devuelve una lista</h3>
+<pre class="ref-code">SELECT nombre
+FROM empleados
+WHERE depto_id IN (SELECT id FROM departamentos WHERE nombre = 'TI');</pre>
+<p>El resultado del IN es la lista de ids que devuelve la subconsulta.</p>
+</div>
+
+<div class="ref-item">
+<h3>Subconsulta con NOT IN — los que NO están</h3>
+<pre class="ref-code">SELECT nombre
+FROM empleados
+WHERE id NOT IN (SELECT empleado_id FROM ventas);</pre>
+<p>Empleados que no tienen ninguna venta. Alternativa al <code>LEFT JOIN … IS NULL</code>.</p>
+<div class="ref-tip">⚠️ Con NOT IN, si la subconsulta devuelve <b>algún NULL</b>, el resultado global es siempre vacío. Usa <code>NOT EXISTS</code> si puedes haber NULLs.</div>
+</div>
+</div>
+
+<div class="ref-section">
+<h2>💡 Consejos y errores comunes</h2>
+
+<div class="ref-item">
+<h3>Comillas simples para texto</h3>
+<pre class="ref-code">WHERE nombre = 'Ana'   -- ✔ correcto
+WHERE nombre = "Ana"   -- ✘ algunos motores lo tratan como columna</pre>
+<p>Comillas simples para strings. Comillas dobles suelen ser para identificadores.</p>
+</div>
+
+<div class="ref-item">
+<h3>NULL no se compara con =</h3>
+<pre class="ref-code">WHERE depto_id = NULL       -- ✘ nunca devuelve filas
+WHERE depto_id IS NULL      -- ✔
+WHERE depto_id IS NOT NULL  -- ✔</pre>
+</div>
+
+<div class="ref-item">
+<h3>Orden obligatorio de cláusulas</h3>
+<pre class="ref-code">SELECT … FROM … WHERE … GROUP BY … HAVING … ORDER BY … LIMIT …</pre>
+<p>Saltarte el orden produce error de sintaxis.</p>
+</div>
+
+<div class="ref-item">
+<h3>El WHERE NO puede usar agregados</h3>
+<pre class="ref-code">WHERE SUM(salario) &gt; 100     -- ✘ error
+HAVING SUM(salario) &gt; 100    -- ✔ después de GROUP BY</pre>
+</div>
+
+<div class="ref-item">
+<h3>Columnas con el mismo nombre en JOINs</h3>
+<pre class="ref-code">SELECT nombre FROM empleados e JOIN departamentos d …</pre>
+<p>Ambas tablas tienen <code>nombre</code>. Usa alias: <code>e.nombre</code> / <code>d.nombre</code> y <code>AS</code> en el SELECT.</p>
+</div>
+
+<div class="ref-item">
+<h3>Alias con o sin AS</h3>
+<pre class="ref-code">SELECT nombre AS empleado FROM empleados;   -- ✔ recomendado
+SELECT nombre empleado       FROM empleados; -- ✔ también vale
+SELECT nombre as "Empleado"  FROM empleados; -- comillas si lleva espacios</pre>
+</div>
+
+<div class="ref-item">
+<h3>Comentarios</h3>
+<pre class="ref-code">-- comentario de una línea
+/* comentario
+   de varias líneas */</pre>
+</div>
+</div>
+
+<div class="ref-section">
+<h2>🚀 Siguiente paso</h2>
+<p>Ya tienes las bases. La mejor forma de fijar todo esto es <b>practicarlo</b>:</p>
+<ul class="ref-list">
+  <li>Vuelve a la pestaña del reto con <b>← Volver al reto</b>.</li>
+  <li>Prueba variantes: cambia el WHERE, prueba LEFT vs INNER, añade un GROUP BY.</li>
+  <li>Usa <b>💡 Pista</b> si te bloqueas, o <b>👁 Ver solución</b> para comparar (cuesta 10 pts).</li>
+  <li>Si quieres un reto sin cronómetro ni puntuación, activa el <b>Modo instructor</b>.</li>
+</ul>
+<div class="ref-tip">💡 ¿Un caso que no cubre esta guía? Consulta directamente la <b>documentación de SQLite</b> (es la que este motor imita).</div>
+</div>
+`);
+
+</script>
+
+</body>
+</html>
